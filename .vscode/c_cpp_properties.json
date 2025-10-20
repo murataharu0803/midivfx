@@ -1,0 +1,18 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:\\openFrameworks\\addons\\**",
+                "C:\\openFrameworks\\libs\\**"
+            ],
+            "defines": [],
+            "compilerPath": "C:/Program Files/Microsoft Visual Studio/18/Insiders/VC/Tools/MSVC/14.50.35702/bin/Hostx64/x64/cl.exe",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "${default}"
+        }
+    ],
+    "version": 4
+}

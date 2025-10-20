@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="midivfx.vcxproj" Id="41401c65-4dec-4fbd-945e-d6853d03fcb4" />
+</Solution>
