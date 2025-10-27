@@ -41,10 +41,11 @@ public:
 	// MIDI
 	ofxMidiIn midiIn;
 	array<array<keyStatus_t, 128>, 256> keyStatuses; // [channel][pitch]
-	array<queue<channelHistory_t>, 256> channelHistories; // [channel]
+	array<deque<noteHistory_t>, 256> noteHistories; // [channel]
+	array<deque<channelHistory_t>, 256> channelHistories; // [channel]
 
 	// visual objects
-	PianoKeys pianoKeys = PianoKeys();
+	PianoKeys pianoKeys = PianoKeys(noteHistories);
 
 	// Visual params
 	float hue = 0.5f;

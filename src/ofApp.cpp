@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "ofApp.h"
 
 const int MAX_HISTORY_SIZE = 1024;
@@ -34,7 +36,8 @@ void ofApp::draw() {
 	camera.begin();
 	ofEnableDepthTest();
 
-	pianoKeys.draw();
+	// Draw piano keys on top
+	pianoKeys.draw(currentTime);
 
 	ofDisableDepthTest();
 	camera.end(); // ← End 3D camera
@@ -77,7 +80,7 @@ void ofApp::newMidiMessage(ofxMidiMessage & event) {
 	MidiStatus status = event.status;
 
 	auto histories = channelHistories[event.channel - 1];
-	histories.push({
+	histories.push_back({
 		currentTime,
 		status,
 		static_cast<uint8_t>(event.pitch),
@@ -85,15 +88,45 @@ void ofApp::newMidiMessage(ofxMidiMessage & event) {
 		static_cast<uint8_t>(event.value),
 	});
 	while (histories.size() > MAX_HISTORY_SIZE) {
-		histories.pop();
+		histories.pop_back();
 	}
 
-	keyStatus_t & noteStatus = keyStatuses[event.channel - 1][event.pitch];
+	auto & noteHistVector = noteHistories[event.channel - 1];
+	auto & noteStatus = keyStatuses[event.channel - 1][event.pitch];
 	if (status == MIDI_NOTE_ON && event.velocity > 0) {
 		noteStatus.isOn = true;
 		noteStatus.velocity = event.velocity;
+
+		auto noteHistory = std::find_if(
+			noteHistVector.begin(),
+			noteHistVector.end(),
+			[&](const noteHistory_t & nh) {
+				return nh.pitch == event.pitch && nh.offTime == 0;
+			});
+		if (noteHistory == noteHistVector.end()) {
+			noteHistVector.push_back({
+				currentTime,
+				0,
+				0,
+				static_cast<uint8_t>(event.pitch),
+				static_cast<uint8_t>(event.velocity),
+			});
+			while (noteHistVector.size() > MAX_HISTORY_SIZE) {
+				noteHistVector.pop_front();
+			}
+		}
 	} else if (status == MIDI_NOTE_OFF || (status == MIDI_NOTE_ON && event.velocity == 0)) {
 		noteStatus.isOn = false;
+
+		auto noteHistory = std::find_if(
+			noteHistVector.begin(),
+			noteHistVector.end(),
+			[&](const noteHistory_t & nh) {
+				return nh.pitch == event.pitch && nh.offTime == 0;
+			});
+		if (noteHistory != noteHistVector.end()) {
+			noteHistory->offTime = currentTime;
+		}
 	} else if (status == MIDI_POLY_AFTERTOUCH) {
 		noteStatus.velocity = event.value;
 	}

@@ -1,6 +1,6 @@
 #include "PianoKey.h"
 
-// layout constants
+// layout constants (exposed externally for Waterfall)
 const float SCALE = 2.f;
 const float OCTAVE_WIDTH = 164 * SCALE;
 const float WHITE_KEY_WIDTH = 23 * SCALE;
@@ -9,6 +9,7 @@ const float WHITE_KEY_HEIGHT = 150 * SCALE;
 const float BLACK_KEY_HEIGHT = 100 * SCALE;
 
 const float padding = 2.f; // padding between keys
+const float speed = .001f;
 
 // Which notes are black keys
 const bool BLACK_KEY_PATTERN[12] = {
@@ -84,6 +85,7 @@ PianoKey::PianoKey(int note)
 	isBlackKey = BLACK_KEY_PATTERN[noteInOctave];
 
 	calculatePosition();
+	calculateRootCenter();
 	calculateDimensions();
 
 	// Set color
@@ -107,6 +109,12 @@ void PianoKey::calculatePosition() {
 	posX = KEY_END_OFFSETS[noteInOctave] + octave * OCTAVE_WIDTH;
 }
 
+void PianoKey::calculateRootCenter() {
+	int octave = noteNumber / 12;
+	int noteInOctave = noteNumber % 12;
+	rootPosX = NOTE_CENTER_OFFSETS[noteInOctave] + octave * OCTAVE_WIDTH;
+}
+
 void PianoKey::calculateDimensions() {
 	int noteInOctave = noteNumber % 12;
 	width = KEY_END_WIDTHS[noteInOctave];
@@ -123,7 +131,28 @@ void PianoKey::draw() {
 		ofSetColor(color);
 	}
 
-	ofDrawBox(posX + width / 2, -height / 2, isBlackKey ? 1 : 0, width - padding, height, 1);
+	ofDrawBox(
+		posX + width / 2,
+		-height / 2,
+		isBlackKey ? 1 : 0,
+		isBlackKey ? width : width - padding,
+		height,
+		1);
+
+	ofPopStyle();
+}
+
+void PianoKey::drawHistory(const noteHistory_t & history, uint64_t currentTime) {
+	ofPushStyle();
+
+	ofSetColor(255, 150, 0); // Orange when active
+	int noteInOctave = noteNumber % 12;
+	const float top = (currentTime - history.onTime) * speed;
+	const float bottom = history.offTime ? (currentTime - history.offTime) * speed : 0;
+	const float w = KEY_ROOT_WIDTHS[noteInOctave];
+	const float h = top - bottom;
+
+	ofDrawBox(rootPosX, (top + bottom) / 2, 0, w, h, 1);
 
 	ofPopStyle();
 }

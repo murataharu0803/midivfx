@@ -1,7 +1,19 @@
+#pragma once
+
+#include "ofxMidi.h"
+
 struct keyStatus_t {
 	int velocity; // also used for polyAftertouch
 	bool isOn;
 	// TODO: CC values
+};
+
+struct noteHistory_t {
+	uint64_t onTime;
+	uint64_t offTime;
+	uint64_t pedalOffTime; // TODO
+	uint8_t pitch;
+	uint8_t velocity;
 };
 
 struct channelHistory_t {
