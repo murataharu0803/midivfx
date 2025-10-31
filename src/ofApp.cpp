@@ -13,6 +13,18 @@ void ofApp::setup() {
 	camera.setPosition(0, 500, 1800); // Initial position
 	camera.setTarget(ofVec3f(0, 500, 0)); // Look at origin
 
+	// Setup lighting
+	ofEnableLighting();
+	ofEnableSeparateSpecularLight();
+
+	ofSetGlobalAmbientColor(ofColor(128, 128, 128));
+
+	directionalLight.setDirectional();
+	directionalLight.setPosition(0, -800, -1000);
+	directionalLight.setDiffuseColor(ofColor(255, 255, 255));
+	directionalLight.setSpecularColor(ofColor(255, 255, 255));
+	directionalLight.lookAt(ofVec3f(0, 0, 0));
+
 	pianoKeys.setup();
 
 	// List MIDI ports
@@ -36,8 +48,16 @@ void ofApp::draw() {
 	camera.begin();
 	ofEnableDepthTest();
 
+	// Enable lights
+	directionalLight.enable();
+	// pointLight.enable();
+
 	// Draw piano keys on top
 	pianoKeys.draw(currentTime);
+
+	// Disable lights before 2D drawing
+	// pointLight.disable();
+	directionalLight.disable();
 
 	ofDisableDepthTest();
 	camera.end(); // ← End 3D camera

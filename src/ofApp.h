@@ -32,6 +32,11 @@ public:
 	void gotMessage(ofMessage msg) override;
 
 	ofEasyCam camera;
+
+	// Lighting
+	ofLight directionalLight;
+	// ofLight pointLight;
+
 	// ofxMidiListener
 	void newMidiMessage(ofxMidiMessage & event);
 
