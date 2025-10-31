@@ -122,23 +122,35 @@ void PianoKey::calculateDimensions() {
 }
 
 void PianoKey::draw() {
+	float w = isBlackKey ? width : width - padding;
+	float h = height;
+	float x = posX + width / 2;
+	float y = -height / 2;
+	float z = isBlackKey ? 1 : 0;
+
 	ofPushStyle();
+	{
+		ofMesh mesh;
+		mesh.setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
 
-	// Draw key body
-	if (isActive) {
-		ofSetColor(255, 150, 0); // Orange when active
-	} else {
-		ofSetColor(color);
+		mesh.addVertex(ofVec3f(x - w / 2, y - h / 2, z));
+		mesh.addNormal(ofVec3f(0, 0, 1));
+		mesh.addColor(color);
+
+		mesh.addVertex(ofVec3f(x + w / 2, y - h / 2, z));
+		mesh.addNormal(ofVec3f(0, 0, 1));
+		mesh.addColor(color);
+
+		mesh.addVertex(ofVec3f(x - w / 2, y + h / 2, z));
+		mesh.addNormal(ofVec3f(0, 0, 1));
+		mesh.addColor(color);
+
+		mesh.addVertex(ofVec3f(x + w / 2, y + h / 2, z));
+		mesh.addNormal(ofVec3f(0, 0, 1));
+		mesh.addColor(color);
+
+		mesh.draw();
 	}
-
-	ofDrawBox(
-		posX + width / 2,
-		-height / 2,
-		isBlackKey ? 1 : 0,
-		isBlackKey ? width : width - padding,
-		height,
-		1);
-
 	ofPopStyle();
 }
 
@@ -147,16 +159,18 @@ void PianoKey::drawHistory(const noteHistory_t & history, uint64_t currentTime) 
 
 	int noteInOctave = noteNumber % 12;
 	const float w = KEY_ROOT_WIDTHS[noteInOctave];
+	float velocityRatio = pow(history.velocity / 127.f, 0.5f);
+	const ofColor BASE_COLOR(255, 64, 0);
+	const ofColor PEDAL_COLOR(128, 128, 128);
 
 	if (DECAY) {
 		const int TIME_SEGMENT = 100000; // us
 		const float DECAY_RATE = 0.95f; // decay ratio for every time segment
-		const ofColor BASE_COLOR(255, 150, 0);
-		const ofColor PEDAL_COLOR(128, 128, 128);
 
 		float x1 = rootPosX - w / 2;
 		float x2 = rootPosX + w / 2;
-		float z = 0.0;
+		float z = 1.0;
+		float pedalZ = 0.0;
 
 		uint64_t tStart = history.onTime;
 		uint64_t tFinal = history.offTime ? history.offTime : currentTime;
@@ -173,12 +187,13 @@ void PianoKey::drawHistory(const noteHistory_t & history, uint64_t currentTime) 
 			const float topRatio = pow(DECAY_RATE, (tEnd - history.onTime) / TIME_SEGMENT);
 
 			ofColor bottomColor = BASE_COLOR;
-			bottomColor.a = 255 * bottomRatio;
+			bottomColor.a = 255 * bottomRatio * velocityRatio;
 
 			ofColor topColor = BASE_COLOR;
-			topColor.a = 255 * topRatio;
+			topColor.a = 255 * topRatio * velocityRatio;
 
 			ofPushStyle();
+			ofEnableAlphaBlending();
 			{
 				ofMesh mesh;
 				mesh.setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
@@ -195,12 +210,15 @@ void PianoKey::drawHistory(const noteHistory_t & history, uint64_t currentTime) 
 
 				mesh.draw();
 			}
+			ofDisableAlphaBlending();
 			ofPopStyle();
 
 			tStart = time;
 		}
 
-		for (uint64_t time = history.onTime; time < tPedalFinal; time += TIME_SEGMENT) {
+		tStart = tFinal;
+
+		for (uint64_t time = tFinal; time < tPedalFinal; time += TIME_SEGMENT) {
 			uint64_t tEnd = std::min(time + TIME_SEGMENT, tPedalFinal);
 			uint64_t tLength = tEnd - tStart;
 
@@ -211,28 +229,30 @@ void PianoKey::drawHistory(const noteHistory_t & history, uint64_t currentTime) 
 			const float topRatio = pow(DECAY_RATE, (tEnd - history.onTime) / TIME_SEGMENT);
 
 			ofColor bottomColor = PEDAL_COLOR;
-			bottomColor.a = 255 * bottomRatio;
+			bottomColor.a = 255 * bottomRatio * velocityRatio;
 
 			ofColor topColor = PEDAL_COLOR;
-			topColor.a = 255 * topRatio;
+			topColor.a = 255 * topRatio * velocityRatio;
 
 			ofPushStyle();
+			ofEnableAlphaBlending();
 			{
 				ofMesh mesh;
 				mesh.setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
 
-				mesh.addVertex(ofVec3f(x1, bottom, z));
+				mesh.addVertex(ofVec3f(x1, bottom, pedalZ));
 				mesh.addColor(bottomColor);
-				mesh.addVertex(ofVec3f(x2, bottom, z));
+				mesh.addVertex(ofVec3f(x2, bottom, pedalZ));
 				mesh.addColor(bottomColor);
 
-				mesh.addVertex(ofVec3f(x1, top, z));
+				mesh.addVertex(ofVec3f(x1, top, pedalZ));
 				mesh.addColor(topColor);
-				mesh.addVertex(ofVec3f(x2, top, z));
+				mesh.addVertex(ofVec3f(x2, top, pedalZ));
 				mesh.addColor(topColor);
 
 				mesh.draw();
 			}
+			ofDisableAlphaBlending();
 			ofPopStyle();
 
 			tStart = time;
@@ -242,15 +262,16 @@ void PianoKey::drawHistory(const noteHistory_t & history, uint64_t currentTime) 
 		const float bottom = history.offTime ? (currentTime - history.offTime) * speed : 0;
 		const float pedalBottom = history.pedalOffTime ? (currentTime - history.pedalOffTime) * speed : 0;
 		const float h = top - bottom;
+		const float pedalH = bottom - pedalBottom;
 
 		ofPushStyle();
-		ofSetColor(255, 150, 0); // Orange when active
+		ofSetColor(BASE_COLOR);
 		ofDrawBox(rootPosX, (top + bottom) / 2, 0, w, h, 1);
 		ofPopStyle();
 
 		ofPushStyle();
-		ofSetColor(128, 128, 128); // Gray when pedal is down
-		ofDrawBox(rootPosX, (top + pedalBottom) / 2, 0, w, h, 1);
+		ofSetColor(PEDAL_COLOR); // Gray when pedal is down
+		ofDrawBox(rootPosX, (bottom + pedalBottom) / 2, 0, w, pedalH, 1);
 		ofPopStyle();
 	}
 }
