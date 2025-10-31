@@ -5,6 +5,7 @@
 struct keyStatus_t {
 	int velocity; // also used for polyAftertouch
 	bool isOn;
+	bool isPedalOn;
 	// TODO: CC values
 };
 

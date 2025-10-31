@@ -43,6 +43,7 @@ public:
 	array<array<keyStatus_t, 128>, 256> keyStatuses; // [channel][pitch]
 	array<deque<noteHistory_t>, 256> noteHistories; // [channel]
 	array<deque<channelHistory_t>, 256> channelHistories; // [channel]
+	bool pedalDown = false;
 
 	// visual objects
 	PianoKeys pianoKeys = PianoKeys(noteHistories);

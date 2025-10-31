@@ -79,6 +79,7 @@ void ofApp::newMidiMessage(ofxMidiMessage & event) {
 
 	MidiStatus status = event.status;
 
+	// channel history
 	auto histories = channelHistories[event.channel - 1];
 	histories.push_back({
 		currentTime,
@@ -91,12 +92,37 @@ void ofApp::newMidiMessage(ofxMidiMessage & event) {
 		histories.pop_back();
 	}
 
-	auto & noteHistVector = noteHistories[event.channel - 1];
+	// pedal status
+	bool oldPedalDown = pedalDown;
+	if (status == MIDI_CONTROL_CHANGE && event.control == 64) {
+		pedalDown = (event.value >= 64);
+	}
+
+	// note status
 	auto & noteStatus = keyStatuses[event.channel - 1][event.pitch];
 	if (status == MIDI_NOTE_ON && event.velocity > 0) {
 		noteStatus.isOn = true;
 		noteStatus.velocity = event.velocity;
+	} else if (status == MIDI_NOTE_OFF || (status == MIDI_NOTE_ON && event.velocity == 0)) {
+		noteStatus.isOn = false;
+		noteStatus.velocity = 0;
+		if (!pedalDown) {
+			noteStatus.isPedalOn = false;
+		}
+	} else if (status == MIDI_POLY_AFTERTOUCH) {
+		noteStatus.velocity = event.value;
+	} else if (oldPedalDown && !pedalDown) { // Pedal released
+		for (auto & noteStatus : keyStatuses[event.channel - 1]) {
+			if (!noteStatus.isOn) {
+				noteStatus.isPedalOn = false;
+			}
+		}
+	}
 
+	// note history
+	auto & noteHistVector = noteHistories[event.channel - 1];
+	if (status == MIDI_NOTE_ON && event.velocity > 0) {
+		// check if not already on
 		auto noteHistory = std::find_if(
 			noteHistVector.begin(),
 			noteHistVector.end(),
@@ -104,6 +130,17 @@ void ofApp::newMidiMessage(ofxMidiMessage & event) {
 				return nh.pitch == event.pitch && nh.offTime == 0;
 			});
 		if (noteHistory == noteHistVector.end()) {
+			// find one that is still pedaled
+			auto pedalNoteHistory = std::find_if(
+				noteHistVector.begin(),
+				noteHistVector.end(),
+				[&](const noteHistory_t & nh) {
+					return nh.pitch == event.pitch && nh.offTime && nh.pedalOffTime == 0;
+				});
+			if (pedalNoteHistory != noteHistVector.end()) {
+				pedalNoteHistory->pedalOffTime = currentTime;
+			}
+			// and then create history
 			noteHistVector.push_back({
 				currentTime,
 				0,
@@ -111,13 +148,8 @@ void ofApp::newMidiMessage(ofxMidiMessage & event) {
 				static_cast<uint8_t>(event.pitch),
 				static_cast<uint8_t>(event.velocity),
 			});
-			while (noteHistVector.size() > MAX_HISTORY_SIZE) {
-				noteHistVector.pop_front();
-			}
 		}
 	} else if (status == MIDI_NOTE_OFF || (status == MIDI_NOTE_ON && event.velocity == 0)) {
-		noteStatus.isOn = false;
-
 		auto noteHistory = std::find_if(
 			noteHistVector.begin(),
 			noteHistVector.end(),
@@ -126,8 +158,19 @@ void ofApp::newMidiMessage(ofxMidiMessage & event) {
 			});
 		if (noteHistory != noteHistVector.end()) {
 			noteHistory->offTime = currentTime;
+			if (!pedalDown) {
+				noteHistory->pedalOffTime = currentTime;
+			}
 		}
-	} else if (status == MIDI_POLY_AFTERTOUCH) {
-		noteStatus.velocity = event.value;
+	} else if (oldPedalDown && !pedalDown) { // Pedal released
+		for (auto & noteHistory : noteHistVector) {
+			if (!noteHistory.pedalOffTime && noteHistory.offTime) {
+				noteHistory.pedalOffTime = currentTime;
+			}
+		}
+	}
+
+	while (noteHistVector.size() > MAX_HISTORY_SIZE) {
+		noteHistVector.pop_front(); // Limit history size
 	}
 }
