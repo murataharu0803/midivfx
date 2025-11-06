@@ -1,9 +1,8 @@
 #pragma once
 
 #include "ofMain.h"
-#include "ofxGui.h"
+
 #include "ofxMidi.h"
-#include "ofxPostProcessing.h"
 
 #include "PianoKeys.h"
 #include "midiUtil.h"
@@ -52,17 +51,4 @@ public:
 
 	// visual objects
 	PianoKeys pianoKeys = PianoKeys(noteHistories);
-
-	// Visual params
-	float hue = 0.5f;
-	float brightness = 0.5f;
-	float rotationSpeed = 0.01f;
-
-	// Post-processing
-	ofxPostProcessing post;
-
-	// GUI
-	ofxPanel gui;
-	ofParameter<float> bloomIntensity;
-	ofParameter<float> bloomRadius;
 };

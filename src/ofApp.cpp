@@ -42,6 +42,17 @@ void ofApp::update() {
 	for (int i = 0; i < 128; ++i) {
 		pianoKeys.keys[i].setActive(keyStatuses[0][i].isOn);
 	}
+
+	for (auto & noteHistVector : noteHistories) {
+		while (noteHistVector.size() > 0) {
+			uint64_t pedalOffTime = noteHistVector.front().pedalOffTime;
+			if (pedalOffTime > 0 && (int64_t)pedalOffTime < (int64_t)currentTime - 5'000'000) {
+				noteHistVector.pop_front(); // remove old history
+			} else {
+				break;
+			}
+		}
+	}
 }
 
 void ofApp::draw() {
@@ -60,7 +71,7 @@ void ofApp::draw() {
 	directionalLight.disable();
 
 	ofDisableDepthTest();
-	camera.end(); // ← End 3D camera
+	camera.end();
 
 	// 2D UI on top
 	ofSetColor(255);
@@ -101,6 +112,9 @@ void ofApp::newMidiMessage(ofxMidiMessage & event) {
 
 	// channel history
 	auto histories = channelHistories[event.channel - 1];
+	if (histories.size() > MAX_HISTORY_SIZE - 1) {
+		histories.pop_front();
+	}
 	histories.push_back({
 		currentTime,
 		status,
@@ -108,9 +122,6 @@ void ofApp::newMidiMessage(ofxMidiMessage & event) {
 		static_cast<uint8_t>(event.control),
 		static_cast<uint8_t>(event.value),
 	});
-	while (histories.size() > MAX_HISTORY_SIZE) {
-		histories.pop_back();
-	}
 
 	// pedal status
 	bool oldPedalDown = pedalDown;
@@ -160,6 +171,10 @@ void ofApp::newMidiMessage(ofxMidiMessage & event) {
 			if (pedalNoteHistory != noteHistVector.end()) {
 				pedalNoteHistory->pedalOffTime = currentTime;
 			}
+			// first check size limit
+			if (noteHistVector.size() > MAX_HISTORY_SIZE - 1) {
+				noteHistVector.pop_front();
+			}
 			// and then create history
 			noteHistVector.push_back({
 				currentTime,
@@ -188,9 +203,5 @@ void ofApp::newMidiMessage(ofxMidiMessage & event) {
 				noteHistory.pedalOffTime = currentTime;
 			}
 		}
-	}
-
-	while (noteHistVector.size() > MAX_HISTORY_SIZE) {
-		noteHistVector.pop_front(); // Limit history size
 	}
 }

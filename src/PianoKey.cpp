@@ -172,11 +172,11 @@ void PianoKey::drawHistory(const noteHistory_t & history, uint64_t currentTime) 
 		float z = 1.0;
 		float pedalZ = 0.0;
 
-		uint64_t tStart = history.onTime;
+		uint64_t tStart = std::max((int64_t)history.onTime, (int64_t)currentTime - 5'000'000);
 		uint64_t tFinal = history.offTime ? history.offTime : currentTime;
 		uint64_t tPedalFinal = history.pedalOffTime ? history.pedalOffTime : currentTime;
 
-		for (uint64_t time = history.onTime; time < tFinal; time += TIME_SEGMENT) {
+		for (uint64_t time = tStart; time < tFinal; time += TIME_SEGMENT) {
 			uint64_t tEnd = std::min(time + TIME_SEGMENT, tFinal);
 			uint64_t tLength = tEnd - tStart;
 
@@ -216,9 +216,9 @@ void PianoKey::drawHistory(const noteHistory_t & history, uint64_t currentTime) 
 			tStart = time;
 		}
 
-		tStart = tFinal;
+		tStart = std::max((int64_t)tFinal, (int64_t)currentTime - 5'000'000);
 
-		for (uint64_t time = tFinal; time < tPedalFinal; time += TIME_SEGMENT) {
+		for (uint64_t time = tStart; time < tPedalFinal; time += TIME_SEGMENT) {
 			uint64_t tEnd = std::min(time + TIME_SEGMENT, tPedalFinal);
 			uint64_t tLength = tEnd - tStart;
 
