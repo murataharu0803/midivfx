@@ -24,3 +24,11 @@ struct channelHistory_t {
 	uint8_t control; // only set for CC
 	uint8_t value; // velocity for noteOn/noteOff/polyAftertouch, value for CC
 };
+
+struct percussionMapping_t {
+	uint8_t channel; // 0 - 255
+	uint8_t pitch;
+	uint8_t mapStartPitch;
+	uint8_t mapEndPitch;
+	bool isSuppressed;
+};

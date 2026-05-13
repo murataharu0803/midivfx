@@ -78,15 +78,20 @@ const float NOTE_CENTER_OFFSETS[12] = {
 	157.5 * SCALE,
 };
 
-PianoKey::PianoKey(int note)
+const std::array<percussionMapping_t, 1> percussionMappings = {
+	{ 0, 36, 24, 36, false }, // map C2 to all C notes in percussion channel
+};
+
+PianoKey::PianoKey(uint8_t note)
 	: noteNumber(note)
 	, isActive(false) {
 	int noteInOctave = note % 12;
 	isBlackKey = BLACK_KEY_PATTERN[noteInOctave];
 
-	calculatePosition();
-	calculateRootCenter();
-	calculateDimensions();
+	posX = calculatePosition(noteNumber);
+	rootPosX = calculateRootCenter(noteNumber);
+	width = calculateWidth(noteNumber);
+	height = calculateHeight(noteNumber);
 
 	// Set color
 	color = isBlackKey ? ofColor(30, 30, 30) : ofColor(240, 240, 240);
@@ -103,22 +108,26 @@ float PianoKey::getKeysWidth(int begin, int end) {
 	return width + KEY_END_WIDTHS[endNoteInOctave];
 }
 
-void PianoKey::calculatePosition() {
+float PianoKey::calculatePosition(uint8_t noteNumber) {
 	int octave = noteNumber / 12;
 	int noteInOctave = noteNumber % 12;
-	posX = KEY_END_OFFSETS[noteInOctave] + octave * OCTAVE_WIDTH;
+	return KEY_END_OFFSETS[noteInOctave] + octave * OCTAVE_WIDTH;
 }
 
-void PianoKey::calculateRootCenter() {
+float PianoKey::calculateRootCenter(uint8_t noteNumber) {
 	int octave = noteNumber / 12;
 	int noteInOctave = noteNumber % 12;
-	rootPosX = NOTE_CENTER_OFFSETS[noteInOctave] + octave * OCTAVE_WIDTH;
+	return NOTE_CENTER_OFFSETS[noteInOctave] + octave * OCTAVE_WIDTH;
 }
 
-void PianoKey::calculateDimensions() {
+float PianoKey::calculateWidth(uint8_t noteNumber) {
 	int noteInOctave = noteNumber % 12;
-	width = KEY_END_WIDTHS[noteInOctave];
-	height = isBlackKey ? BLACK_KEY_HEIGHT : WHITE_KEY_HEIGHT;
+	return KEY_END_WIDTHS[noteInOctave];
+}
+
+float PianoKey::calculateHeight(uint8_t noteNumber) {
+	int noteInOctave = noteNumber % 12;
+	return BLACK_KEY_PATTERN[noteInOctave] ? BLACK_KEY_HEIGHT : WHITE_KEY_HEIGHT;
 }
 
 void PianoKey::draw() {
@@ -154,19 +163,31 @@ void PianoKey::draw() {
 	ofPopStyle();
 }
 
-void PianoKey::drawHistory(uint64_t currentTime, const noteHistory_t & history, std::deque<channelHistory_t> events) {
+void PianoKey::drawHistory(uint64_t currentTime, uint8_t channel, const noteHistory_t & history, std::deque<channelHistory_t> events) {
 	const uint8_t USE_CC = 64;
 	const bool DECAY = true;
 
 	int noteInOctave = noteNumber % 12;
-	const float w = KEY_ROOT_WIDTHS[noteInOctave];
 	float velocityRatio = pow(history.velocity / 127.f, 0.5f);
 	const ofColor BASE_COLOR(255, 64, 0);
 	const ofColor PEDAL_COLOR(128, 128, 128);
 
+	auto mapping = std::find_if(
+		percussionMappings.begin(),
+		percussionMappings.end(),
+		[&](const percussionMapping_t & mapping) {
+			return mapping.channel == channel && noteNumber == mapping.pitch;
+		});
+	const float finalPosX = mapping != percussionMappings.end()
+		? (calculatePosition(mapping->mapEndPitch + 1) + calculatePosition(mapping->mapStartPitch)) / 2
+		: rootPosX;
+	const float w = mapping != percussionMappings.end()
+		? calculatePosition(mapping->mapEndPitch + 1) - calculatePosition(mapping->mapStartPitch)
+		: KEY_ROOT_WIDTHS[noteInOctave];
+
 	if (USE_CC) {
-		float x1 = rootPosX - w / 2;
-		float x2 = rootPosX + w / 2;
+		float x1 = finalPosX - w / 2;
+		float x2 = finalPosX + w / 2;
 		float z = 1.0;
 		float pedalZ = 0.0;
 
@@ -174,7 +195,14 @@ void PianoKey::drawHistory(uint64_t currentTime, const noteHistory_t & history, 
 		uint64_t tFinal = history.offTime ? history.offTime : currentTime;
 		uint64_t tPedalFinal = history.pedalOffTime ? history.pedalOffTime : currentTime;
 
-		// find the last event that happened before the history onTime
+		// find the last CC event before tStart, and position nextEvent at the next CC event at/after tStart
+		auto advanceToCC = [&](std::deque<channelHistory_t>::iterator it) {
+			while (it != events.end() && !(it->status == MIDI_CONTROL_CHANGE && it->control == USE_CC)) {
+				++it;
+			}
+			return it;
+		};
+
 		std::deque<channelHistory_t>::iterator nextEvent = events.begin();
 		std::deque<channelHistory_t>::iterator curEvent = events.end();
 		while (nextEvent != events.end() && nextEvent->timestamp < tStart) {
@@ -183,10 +211,18 @@ void PianoKey::drawHistory(uint64_t currentTime, const noteHistory_t & history, 
 			}
 			++nextEvent;
 		}
-		int8_t ccValue = curEvent != events.end() ? curEvent->value : nextEvent != events.end() ? nextEvent->value
-																								: 127;
-		uint64_t ccEventTime = curEvent != events.end() ? curEvent->timestamp : nextEvent != events.end() ? nextEvent->timestamp
-																										  : 0;
+		nextEvent = advanceToCC(nextEvent);
+
+		int8_t ccValue = curEvent != events.end()
+			? curEvent->value
+			: nextEvent != events.end()
+			? nextEvent->value
+			: 127;
+		uint64_t ccEventTime = curEvent != events.end()
+			? curEvent->timestamp
+			: nextEvent != events.end()
+			? nextEvent->timestamp
+			: 0;
 
 		while (tStart < tFinal) {
 			int8_t nextCcValue = nextEvent != events.end() ? nextEvent->value : ccValue; // used for transition
@@ -233,7 +269,7 @@ void PianoKey::drawHistory(uint64_t currentTime, const noteHistory_t & history, 
 			if (needIterateFlag) {
 				ccValue = nextCcValue;
 				ccEventTime = nextCcEventTime;
-				++nextEvent;
+				nextEvent = advanceToCC(++nextEvent);
 			} else {
 				break;
 			}
@@ -286,7 +322,7 @@ void PianoKey::drawHistory(uint64_t currentTime, const noteHistory_t & history, 
 			if (needIterateFlag) {
 				ccValue = nextCcValue;
 				ccEventTime = nextCcEventTime;
-				++nextEvent;
+				nextEvent = advanceToCC(++nextEvent);
 			} else {
 				break;
 			}
@@ -295,8 +331,8 @@ void PianoKey::drawHistory(uint64_t currentTime, const noteHistory_t & history, 
 		const int TIME_SEGMENT = 100000; // us
 		const float DECAY_RATE = 0.95f; // decay ratio for every time segment
 
-		float x1 = rootPosX - w / 2;
-		float x2 = rootPosX + w / 2;
+		float x1 = finalPosX - w / 2;
+		float x2 = finalPosX + w / 2;
 		float z = 1.0;
 		float pedalZ = 0.0;
 
@@ -394,12 +430,12 @@ void PianoKey::drawHistory(uint64_t currentTime, const noteHistory_t & history, 
 
 		ofPushStyle();
 		ofSetColor(BASE_COLOR);
-		ofDrawBox(rootPosX, (top + bottom) / 2, 0, w, h, 1);
+		ofDrawBox(finalPosX, (top + bottom) / 2, 0, w, h, 1);
 		ofPopStyle();
 
 		ofPushStyle();
 		ofSetColor(PEDAL_COLOR); // Gray when pedal is down
-		ofDrawBox(rootPosX, (bottom + pedalBottom) / 2, 0, w, pedalH, 1);
+		ofDrawBox(finalPosX, (bottom + pedalBottom) / 2, 0, w, pedalH, 1);
 		ofPopStyle();
 	}
 }

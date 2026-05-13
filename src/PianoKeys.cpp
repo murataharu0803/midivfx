@@ -24,7 +24,7 @@ void PianoKeys::draw(uint64_t currentTime) {
 			auto & historyVector = noteHistories[i];
 			auto & events = channelHistories[i];
 			for (const auto & history : historyVector) {
-				keys[history.pitch].drawHistory(currentTime, history, events);
+				keys[history.pitch].drawHistory(currentTime, i, history, events);
 			}
 		}
 	}

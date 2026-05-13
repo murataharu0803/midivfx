@@ -8,7 +8,7 @@ class PianoKey {
 public:
 	static float getKeysWidth(int begin, int end);
 
-	int noteNumber; // 0-127
+	uint8_t noteNumber; // 0-127
 	bool isBlackKey;
 	bool isActive;
 
@@ -16,14 +16,15 @@ public:
 	float width, height;
 	ofColor color;
 
-	PianoKey(int note);
+	PianoKey(uint8_t note);
 
 	void draw();
-	void drawHistory(uint64_t currentTime, const noteHistory_t & history, std::deque<channelHistory_t> events);
+	void drawHistory(uint64_t currentTime, uint8_t channel, const noteHistory_t & history, std::deque<channelHistory_t> events);
 	void setActive(bool active);
 
 private:
-	void calculatePosition();
-	void calculateRootCenter();
-	void calculateDimensions();
+	static float calculatePosition(uint8_t noteNumber);
+	static float calculateRootCenter(uint8_t noteNumber);
+	static float calculateWidth(uint8_t noteNumber);
+	static float calculateHeight(uint8_t noteNumber);
 };
