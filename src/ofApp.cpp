@@ -111,7 +111,7 @@ void ofApp::newMidiMessage(ofxMidiMessage & event) {
 	MidiStatus status = event.status;
 
 	// channel history
-	auto histories = channelHistories[event.channel - 1];
+	auto & histories = channelHistories[event.channel - 1];
 	if (histories.size() > MAX_HISTORY_SIZE - 1) {
 		histories.pop_front();
 	}

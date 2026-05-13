@@ -154,7 +154,8 @@ void PianoKey::draw() {
 	ofPopStyle();
 }
 
-void PianoKey::drawHistory(const noteHistory_t & history, uint64_t currentTime) {
+void PianoKey::drawHistory(uint64_t currentTime, const noteHistory_t & history, std::deque<channelHistory_t> events) {
+	const uint8_t USE_CC = 64;
 	const bool DECAY = true;
 
 	int noteInOctave = noteNumber % 12;
@@ -163,7 +164,134 @@ void PianoKey::drawHistory(const noteHistory_t & history, uint64_t currentTime) 
 	const ofColor BASE_COLOR(255, 64, 0);
 	const ofColor PEDAL_COLOR(128, 128, 128);
 
-	if (DECAY) {
+	if (USE_CC) {
+		float x1 = rootPosX - w / 2;
+		float x2 = rootPosX + w / 2;
+		float z = 1.0;
+		float pedalZ = 0.0;
+
+		uint64_t tStart = std::max((int64_t)history.onTime, (int64_t)currentTime - 5'000'000);
+		uint64_t tFinal = history.offTime ? history.offTime : currentTime;
+		uint64_t tPedalFinal = history.pedalOffTime ? history.pedalOffTime : currentTime;
+
+		// find the last event that happened before the history onTime
+		std::deque<channelHistory_t>::iterator nextEvent = events.begin();
+		std::deque<channelHistory_t>::iterator curEvent = events.end();
+		while (nextEvent != events.end() && nextEvent->timestamp < tStart) {
+			if (nextEvent->status == MIDI_CONTROL_CHANGE && nextEvent->control == USE_CC) {
+				curEvent = nextEvent;
+			}
+			++nextEvent;
+		}
+		int8_t ccValue = curEvent != events.end() ? curEvent->value : nextEvent != events.end() ? nextEvent->value
+																								: 127;
+		uint64_t ccEventTime = curEvent != events.end() ? curEvent->timestamp : nextEvent != events.end() ? nextEvent->timestamp
+																										  : 0;
+
+		while (tStart < tFinal) {
+			int8_t nextCcValue = nextEvent != events.end() ? nextEvent->value : ccValue; // used for transition
+			uint64_t nextCcEventTime = nextEvent != events.end() ? nextEvent->timestamp : 0; // used for transition
+			uint64_t tEnd = nextCcEventTime ? std::min(nextCcEventTime, tFinal) : tFinal;
+			bool needIterateFlag = nextEvent != events.end() && tFinal >= nextCcEventTime;
+
+			uint64_t tLength = tEnd - tStart;
+
+			const float top = (currentTime - tEnd) * speed;
+			const float bottom = (currentTime - tStart) * speed;
+
+			const float bottomRatio = ccValue / 127.f;
+			const float topRatio = ccValue / 127.f;
+
+			ofColor bottomColor = BASE_COLOR;
+			bottomColor.a = 255 * bottomRatio;
+
+			ofColor topColor = BASE_COLOR;
+			topColor.a = 255 * topRatio;
+
+			ofPushStyle();
+			ofEnableAlphaBlending();
+			{
+				ofMesh mesh;
+				mesh.setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
+
+				mesh.addVertex(ofVec3f(x1, bottom, z));
+				mesh.addColor(bottomColor);
+				mesh.addVertex(ofVec3f(x2, bottom, z));
+				mesh.addColor(bottomColor);
+
+				mesh.addVertex(ofVec3f(x1, top, z));
+				mesh.addColor(topColor);
+				mesh.addVertex(ofVec3f(x2, top, z));
+				mesh.addColor(topColor);
+
+				mesh.draw();
+			}
+			ofDisableAlphaBlending();
+			ofPopStyle();
+
+			tStart = tEnd;
+			if (needIterateFlag) {
+				ccValue = nextCcValue;
+				ccEventTime = nextCcEventTime;
+				++nextEvent;
+			} else {
+				break;
+			}
+		}
+
+		tStart = std::max((int64_t)tFinal, (int64_t)currentTime - 5'000'000);
+
+		while (tStart < tPedalFinal) {
+			int8_t nextCcValue = nextEvent != events.end() ? nextEvent->value : ccValue; // used for transition
+			uint64_t nextCcEventTime = nextEvent != events.end() ? nextEvent->timestamp : 0; // used for transition
+			uint64_t tEnd = nextCcEventTime ? std::min(nextCcEventTime, tPedalFinal) : tPedalFinal;
+			bool needIterateFlag = nextEvent != events.end() && tPedalFinal >= nextCcEventTime;
+
+			uint64_t tLength = tEnd - tStart;
+
+			const float top = (currentTime - tEnd) * speed;
+			const float bottom = (currentTime - tStart) * speed;
+
+			const float bottomRatio = ccValue / 127.f;
+			const float topRatio = ccValue / 127.f;
+
+			ofColor bottomColor = PEDAL_COLOR;
+			bottomColor.a = 255 * bottomRatio;
+
+			ofColor topColor = PEDAL_COLOR;
+			topColor.a = 255 * topRatio;
+
+			ofPushStyle();
+			ofEnableAlphaBlending();
+			{
+				ofMesh mesh;
+				mesh.setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
+
+				mesh.addVertex(ofVec3f(x1, bottom, z));
+				mesh.addColor(bottomColor);
+				mesh.addVertex(ofVec3f(x2, bottom, z));
+				mesh.addColor(bottomColor);
+
+				mesh.addVertex(ofVec3f(x1, top, z));
+				mesh.addColor(topColor);
+				mesh.addVertex(ofVec3f(x2, top, z));
+				mesh.addColor(topColor);
+
+				mesh.draw();
+			}
+			ofDisableAlphaBlending();
+			ofPopStyle();
+
+			tStart = tEnd;
+			if (needIterateFlag) {
+				ccValue = nextCcValue;
+				ccEventTime = nextCcEventTime;
+				++nextEvent;
+			} else {
+				break;
+			}
+		}
+	} else if (DECAY) {
 		const int TIME_SEGMENT = 100000; // us
 		const float DECAY_RATE = 0.95f; // decay ratio for every time segment
 

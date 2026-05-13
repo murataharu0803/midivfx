@@ -19,7 +19,7 @@ public:
 	PianoKey(int note);
 
 	void draw();
-	void drawHistory(const noteHistory_t & history, uint64_t currentTime);
+	void drawHistory(uint64_t currentTime, const noteHistory_t & history, std::deque<channelHistory_t> events);
 	void setActive(bool active);
 
 private:

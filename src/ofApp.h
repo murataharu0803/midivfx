@@ -50,5 +50,5 @@ public:
 	bool pedalDown = false;
 
 	// visual objects
-	PianoKeys pianoKeys = PianoKeys(noteHistories);
+	PianoKeys pianoKeys = PianoKeys(noteHistories, channelHistories);
 };
