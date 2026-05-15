@@ -163,8 +163,8 @@ void PianoKey::draw() {
 	ofPopStyle();
 }
 
-void PianoKey::drawHistory(uint64_t currentTime, uint8_t channel, const noteHistory_t & history, std::deque<channelHistory_t> events) {
-	const uint8_t USE_CC = 64;
+void PianoKey::drawHistory(uint64_t currentTime, uint8_t track, uint8_t channel, const noteHistory_t & history, std::deque<channelHistory_t> events) {
+	const uint8_t USE_CC = 0;
 	const bool DECAY = true;
 
 	int noteInOctave = noteNumber % 12;
@@ -176,7 +176,7 @@ void PianoKey::drawHistory(uint64_t currentTime, uint8_t channel, const noteHist
 		percussionMappings.begin(),
 		percussionMappings.end(),
 		[&](const percussionMapping_t & mapping) {
-			return mapping.channel == channel && noteNumber == mapping.pitch;
+			return mapping.track == track && mapping.channel == channel && noteNumber == mapping.pitch;
 		});
 	const float finalPosX = mapping != percussionMappings.end()
 		? (calculatePosition(mapping->mapEndPitch + 1) + calculatePosition(mapping->mapStartPitch)) / 2

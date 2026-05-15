@@ -1,8 +1,8 @@
 #include "PianoKeys.h"
 
 PianoKeys::PianoKeys(
-	std::array<std::deque<noteHistory_t>, 256> & noteHistories,
-	std::array<std::deque<channelHistory_t>, 256> & channelHistories)
+	std::vector<std::array<std::deque<noteHistory_t>, 16>> & noteHistories,
+	std::vector<std::array<std::deque<channelHistory_t>, 16>> & channelHistories)
 	: noteHistories(noteHistories)
 	, channelHistories(channelHistories) {
 	};
@@ -20,11 +20,13 @@ void PianoKeys::draw(uint64_t currentTime) {
 		for (auto & key : keys) {
 			key.draw();
 		}
-		for (int i = 0; i < 256; ++i) {
-			auto & historyVector = noteHistories[i];
-			auto & events = channelHistories[i];
-			for (const auto & history : historyVector) {
-				keys[history.pitch].drawHistory(currentTime, i, history, events);
+		for (int t = 0; t < (int)noteHistories.size(); ++t) {
+			for (int c = 0; c < 16; ++c) {
+				auto & historyVector = noteHistories[t][c];
+				auto & events = channelHistories[t][c];
+				for (const auto & history : historyVector) {
+					keys[history.pitch].drawHistory(currentTime, t, c, history, events);
+				}
 			}
 		}
 	}

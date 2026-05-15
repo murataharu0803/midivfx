@@ -3,6 +3,7 @@
 #include "ofMain.h"
 
 #include "ofxMidi.h"
+#include "ofxMidifile.h"
 
 #include "PianoKeys.h"
 #include "midiUtil.h"
@@ -37,18 +38,38 @@ public:
 	// ofLight pointLight;
 
 	// ofxMidiListener
-	void newMidiMessage(ofxMidiMessage & event);
+	void newMidiMessage(ofxMidiMessage & event) override;
 
 	// time
 	uint64_t currentTime = 0;
 
 	// MIDI
 	ofxMidiIn midiIn;
-	array<array<keyStatus_t, 128>, 256> keyStatuses; // [channel][pitch]
-	array<deque<noteHistory_t>, 256> noteHistories; // [channel]
-	array<deque<channelHistory_t>, 256> channelHistories; // [channel]
-	bool pedalDown = false;
+	// [track][channel(0-based)][pitch] — track count set at setup; 16 channels fixed by MIDI spec
+	vector<array<array<keyStatus_t, 128>, 16>> keyStatuses;
+	vector<array<deque<noteHistory_t>, 16>> noteHistories;
+	vector<array<deque<channelHistory_t>, 16>> channelHistories;
+	vector<array<bool, 16>> pedalDown;
 
 	// visual objects
 	PianoKeys pianoKeys = PianoKeys(noteHistories, channelHistories);
+
+	// MIDI file playback
+	static constexpr bool useMidiFile = true;
+	static constexpr const char * midiFilePath = "song.mid"; // place in bin/data/
+	struct MidiFileEvent {
+		uint64_t timeUs;
+		uint8_t status;
+		uint8_t track; // 0-based track index
+		uint8_t channel; // 0-based MIDI channel (0-15)
+		uint8_t data1;
+		uint8_t data2;
+	};
+	vector<MidiFileEvent> midiFileEvents;
+	size_t playbackHead = 0;
+	uint64_t playbackStartTime = 0;
+
+private:
+	void processMidiMessage(ofxMidiMessage & event, uint8_t track);
+	void initTracks(int count);
 };

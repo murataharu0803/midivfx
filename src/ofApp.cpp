@@ -4,6 +4,15 @@
 
 const int MAX_HISTORY_SIZE = 1024;
 
+void ofApp::initTracks(int count) {
+	keyStatuses.resize(count);
+	noteHistories.resize(count);
+	channelHistories.resize(count);
+	pedalDown.resize(count);
+	for (auto & arr : pedalDown)
+		arr.fill(false);
+}
+
 void ofApp::setup() {
 	ofSetFrameRate(60);
 	ofSetVerticalSync(true);
@@ -27,29 +36,87 @@ void ofApp::setup() {
 
 	pianoKeys.setup();
 
-	// List MIDI ports
-	midiIn.listInPorts();
+	if (useMidiFile) {
+		ofxMidifile mf;
+		if (mf.load(midiFilePath)) {
+			smf::MidiFile & smf = mf.get();
+			ofLogNotice() << "Tracks: " << smf.getTrackCount();
+			smf.doTimeAnalysis();
 
-	// Open first port (or choose specific one)
-	midiIn.openPort(1);
-	midiIn.addListener(this);
+			initTracks(smf.getTrackCount());
+
+			for (int t = 0; t < smf.getTrackCount(); ++t) {
+				for (int i = 0; i < smf[t].size(); ++i) {
+					smf::MidiEvent & ev = smf[t][i];
+					if (!ev.isNoteOn() && !ev.isNoteOff() && !ev.isController()) continue;
+					midiFileEvents.push_back({
+						(uint64_t)(ev.seconds * 1'000'000),
+						(uint8_t)(ev[0] & 0xF0),
+						(uint8_t)t,
+						(uint8_t)ev.getChannel(), // 0-based
+						(uint8_t)ev.getP1(),
+						(uint8_t)ev.getP2(),
+					});
+				}
+			}
+			std::sort(midiFileEvents.begin(), midiFileEvents.end(),
+				[](const MidiFileEvent & a, const MidiFileEvent & b) { return a.timeUs < b.timeUs; });
+			playbackStartTime = currentTime;
+		}
+	} else {
+		initTracks(1); // one track per port; extend here for multi-port
+
+		// List MIDI ports
+		midiIn.listInPorts();
+
+		// Open first port (or choose specific one)
+		midiIn.openPort(1);
+		midiIn.addListener(this);
+	}
 }
 
 void ofApp::update() {
 	currentTime = ofGetElapsedTimeMicros();
 
-	// Update your note positions, animations, etc.
-	for (int i = 0; i < 128; ++i) {
-		pianoKeys.keys[i].setActive(keyStatuses[0][i].isOn);
+	if (useMidiFile) {
+		uint64_t playbackTime = currentTime - playbackStartTime;
+		while (playbackHead < midiFileEvents.size() && midiFileEvents[playbackHead].timeUs <= playbackTime) {
+			auto & e = midiFileEvents[playbackHead++];
+			ofxMidiMessage msg;
+			msg.status = (MidiStatus)(e.status);
+			msg.channel = e.channel + 1; // processMidiMessage expects 1-based
+			msg.pitch = e.data1;
+			msg.velocity = e.data2;
+			msg.value = e.data2;
+			processMidiMessage(msg, e.track);
+		}
 	}
 
-	for (auto & noteHistVector : noteHistories) {
-		while (noteHistVector.size() > 0) {
-			uint64_t pedalOffTime = noteHistVector.front().pedalOffTime;
-			if (pedalOffTime > 0 && (int64_t)pedalOffTime < (int64_t)currentTime - 5'000'000) {
-				noteHistVector.pop_front(); // remove old history
-			} else {
-				break;
+	// Update piano key active state — any track/channel activates the key
+	for (int i = 0; i < 128; ++i) {
+		bool active = false;
+		for (auto & trackStatuses : keyStatuses) {
+			for (auto & chStatuses : trackStatuses) {
+				if (chStatuses[i].isOn) {
+					active = true;
+					break;
+				}
+			}
+			if (active) break;
+		}
+		pianoKeys.keys[i].setActive(active);
+	}
+
+	// Remove old note history
+	for (auto & trackHistories : noteHistories) {
+		for (auto & noteHistVector : trackHistories) {
+			while (!noteHistVector.empty()) {
+				uint64_t pedalOffTime = noteHistVector.front().pedalOffTime;
+				if (pedalOffTime > 0 && (int64_t)pedalOffTime < (int64_t)currentTime - 5'000'000) {
+					noteHistVector.pop_front();
+				} else {
+					break;
+				}
 			}
 		}
 	}
@@ -106,12 +173,22 @@ void ofApp::gotMessage(ofMessage msg) { }
 void ofApp::dragEvent(ofDragInfo dragInfo) { }
 
 void ofApp::newMidiMessage(ofxMidiMessage & event) {
-	ofLogNotice() << event.toString();
+	processMidiMessage(event, 0); // live MIDI always maps to track 0
+}
 
+void ofApp::processMidiMessage(ofxMidiMessage & event, uint8_t track) {
+	if (track >= keyStatuses.size()) {
+		ofLogWarning() << "processMidiMessage: track " << track << " out of range";
+		return;
+	}
+
+	// ofLogNotice() << event.toString();
+
+	const uint8_t ch = event.channel - 1; // convert to 0-based
 	MidiStatus status = event.status;
 
 	// channel history
-	auto & histories = channelHistories[event.channel - 1];
+	auto & histories = channelHistories[track][ch];
 	if (histories.size() > MAX_HISTORY_SIZE - 1) {
 		histories.pop_front();
 	}
@@ -124,34 +201,35 @@ void ofApp::newMidiMessage(ofxMidiMessage & event) {
 	});
 
 	// pedal status
-	bool oldPedalDown = pedalDown;
+	bool & channelPedalDown = pedalDown[track][ch];
+	bool oldChannelPedalDown = channelPedalDown;
 	if (status == MIDI_CONTROL_CHANGE && event.control == 64) {
-		pedalDown = (event.value >= 64);
+		channelPedalDown = (event.value >= 64);
 	}
 
 	// note status
-	auto & noteStatus = keyStatuses[event.channel - 1][event.pitch];
+	auto & noteStatus = keyStatuses[track][ch][event.pitch];
 	if (status == MIDI_NOTE_ON && event.velocity > 0) {
 		noteStatus.isOn = true;
 		noteStatus.velocity = event.velocity;
 	} else if (status == MIDI_NOTE_OFF || (status == MIDI_NOTE_ON && event.velocity == 0)) {
 		noteStatus.isOn = false;
 		noteStatus.velocity = 0;
-		if (!pedalDown) {
+		if (!channelPedalDown) {
 			noteStatus.isPedalOn = false;
 		}
 	} else if (status == MIDI_POLY_AFTERTOUCH) {
 		noteStatus.velocity = event.value;
-	} else if (oldPedalDown && !pedalDown) { // Pedal released
-		for (auto & noteStatus : keyStatuses[event.channel - 1]) {
-			if (!noteStatus.isOn) {
-				noteStatus.isPedalOn = false;
+	} else if (oldChannelPedalDown && !channelPedalDown) { // Pedal released
+		for (auto & keyStatus : keyStatuses[track][ch]) {
+			if (!keyStatus.isOn) {
+				keyStatus.isPedalOn = false;
 			}
 		}
 	}
 
 	// note history
-	auto & noteHistVector = noteHistories[event.channel - 1];
+	auto & noteHistVector = noteHistories[track][ch];
 	if (status == MIDI_NOTE_ON && event.velocity > 0) {
 		// check if not already on
 		auto noteHistory = std::find_if(
@@ -193,11 +271,11 @@ void ofApp::newMidiMessage(ofxMidiMessage & event) {
 			});
 		if (noteHistory != noteHistVector.end()) {
 			noteHistory->offTime = currentTime;
-			if (!pedalDown) {
+			if (!channelPedalDown) {
 				noteHistory->pedalOffTime = currentTime;
 			}
 		}
-	} else if (oldPedalDown && !pedalDown) { // Pedal released
+	} else if (oldChannelPedalDown && !channelPedalDown) { // Pedal released
 		for (auto & noteHistory : noteHistVector) {
 			if (!noteHistory.pedalOffTime && noteHistory.offTime) {
 				noteHistory.pedalOffTime = currentTime;

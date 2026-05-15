@@ -82,7 +82,7 @@
 			<PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
 			<RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
 			<WarningLevel>Level3</WarningLevel>
-			<AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);src;..\..\..\addons\ofxBloom\src;..\..\..\addons\ofxGui\src;..\..\..\addons\ofxMidi\libs;..\..\..\addons\ofxMidi\libs\pgmidi;..\..\..\addons\ofxMidi\libs\rtmidi;..\..\..\addons\ofxMidi\src;..\..\..\addons\ofxMidi\src\desktop;..\..\..\addons\ofxMidi\src\ios</AdditionalIncludeDirectories>
+			<AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);src;..\..\..\addons\ofxBloom\src;..\..\..\addons\ofxGui\src;..\..\..\addons\ofxMidi\libs;..\..\..\addons\ofxMidi\libs\pgmidi;..\..\..\addons\ofxMidi\libs\rtmidi;..\..\..\addons\ofxMidi\src;..\..\..\addons\ofxMidi\src\desktop;..\..\..\addons\ofxMidi\src\ios;..\..\..\addons\ofxMidifile\src;..\..\..\addons\ofxMidifile\libs\midifile\include</AdditionalIncludeDirectories>
 			<CompileAs>CompileAsCpp</CompileAs>
 			<MultiProcessorCompilation>true</MultiProcessorCompilation>
 			<ObjectFileName>$(IntDir)\Build\%(RelativeDir)\$(Configuration)\</ObjectFileName>
@@ -127,7 +127,7 @@
 			<PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
 			<RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
 			<WarningLevel>Level3</WarningLevel>
-			<AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);src;..\..\..\addons\ofxBloom\src;..\..\..\addons\ofxGui\src;..\..\..\addons\ofxMidi\libs;..\..\..\addons\ofxMidi\libs\pgmidi;..\..\..\addons\ofxMidi\libs\rtmidi;..\..\..\addons\ofxMidi\src;..\..\..\addons\ofxMidi\src\desktop;..\..\..\addons\ofxMidi\src\ios</AdditionalIncludeDirectories>
+			<AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);src;..\..\..\addons\ofxBloom\src;..\..\..\addons\ofxGui\src;..\..\..\addons\ofxMidi\libs;..\..\..\addons\ofxMidi\libs\pgmidi;..\..\..\addons\ofxMidi\libs\rtmidi;..\..\..\addons\ofxMidi\src;..\..\..\addons\ofxMidi\src\desktop;..\..\..\addons\ofxMidi\src\ios;..\..\..\addons\ofxMidifile\src;..\..\..\addons\ofxMidifile\libs\midifile\include</AdditionalIncludeDirectories>
 			<CompileAs>CompileAsCpp</CompileAs>
 			<ObjectFileName>$(IntDir)\Build\%(RelativeDir)\$(Configuration)\</ObjectFileName>
 			<LanguageStandard>stdcpplatest</LanguageStandard>
@@ -251,6 +251,13 @@
 		<ClCompile Include="..\..\..\addons\ofxMidi\src\ofxMidiOut.cpp" />
 		<ClCompile Include="..\..\..\addons\ofxMidi\src\ofxMidiTimecode.cpp" />
 		<ClCompile Include="..\..\..\addons\ofxMidi\libs\rtmidi\RtMidi.cpp" />
+		<ClCompile Include="..\..\..\addons\ofxMidifile\src\ofxMidifile.cpp" />
+		<ClCompile Include="..\..\..\addons\ofxMidifile\libs\midifile\src\Binasc.cpp" />
+		<ClCompile Include="..\..\..\addons\ofxMidifile\libs\midifile\src\MidiEvent.cpp" />
+		<ClCompile Include="..\..\..\addons\ofxMidifile\libs\midifile\src\MidiEventList.cpp" />
+		<ClCompile Include="..\..\..\addons\ofxMidifile\libs\midifile\src\MidiFile.cpp" />
+		<ClCompile Include="..\..\..\addons\ofxMidifile\libs\midifile\src\MidiMessage.cpp" />
+		<ClCompile Include="..\..\..\addons\ofxMidifile\libs\midifile\src\Options.cpp" />
 	</ItemGroup>
 	<ItemGroup>
 		<ClInclude Include="src\ofApp.h" />
@@ -281,6 +288,13 @@
 		<ClInclude Include="..\..\..\addons\ofxMidi\src\ofxMidiTimecode.h" />
 		<ClInclude Include="..\..\..\addons\ofxMidi\src\ofxMidiTypes.h" />
 		<ClInclude Include="..\..\..\addons\ofxMidi\libs\rtmidi\RtMidi.h" />
+		<ClInclude Include="..\..\..\addons\ofxMidifile\src\ofxMidifile.h" />
+		<ClInclude Include="..\..\..\addons\ofxMidifile\libs\midifile\include\Binasc.h" />
+		<ClInclude Include="..\..\..\addons\ofxMidifile\libs\midifile\include\MidiEvent.h" />
+		<ClInclude Include="..\..\..\addons\ofxMidifile\libs\midifile\include\MidiEventList.h" />
+		<ClInclude Include="..\..\..\addons\ofxMidifile\libs\midifile\include\MidiFile.h" />
+		<ClInclude Include="..\..\..\addons\ofxMidifile\libs\midifile\include\MidiMessage.h" />
+		<ClInclude Include="..\..\..\addons\ofxMidifile\libs\midifile\include\Options.h" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="$(OF_ROOT)\libs\openFrameworksCompiled\project\vs\openframeworksLib.vcxproj">
