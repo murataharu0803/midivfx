@@ -10,15 +10,15 @@ struct keyStatus_t {
 };
 
 struct noteHistory_t {
-	uint64_t onTime;
-	uint64_t offTime;
-	uint64_t pedalOffTime; // TODO
+	int64_t onTime;
+	int64_t offTime;
+	int64_t pedalOffTime; // TODO
 	uint8_t pitch;
 	uint8_t velocity;
 };
 
 struct channelHistory_t {
-	uint64_t timestamp;
+	int64_t timestamp;
 	MidiStatus status;
 	uint8_t pitch; // only set for noteOn/noteOff/polyAftertouch
 	uint8_t control; // only set for CC

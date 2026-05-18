@@ -19,7 +19,15 @@ public:
 	PianoKey(uint8_t note);
 
 	void draw();
-	void drawHistory(uint64_t currentTime, uint8_t track, uint8_t channel, const noteHistory_t & history, std::deque<channelHistory_t> events);
+	void drawHistory(
+		int64_t currentTime,
+		uint8_t track,
+		uint8_t channel,
+		const noteHistory_t & history,
+		std::deque<channelHistory_t> events,
+		bool reverseMode,
+		int64_t dispatchOffset,
+		int64_t removeOffset);
 	void setActive(bool active);
 
 private:

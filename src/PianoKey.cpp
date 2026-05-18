@@ -1,5 +1,7 @@
 #include "PianoKey.h"
 
+const int64_t MAX_TIME = std::numeric_limits<int64_t>::max();
+
 // layout constants (exposed externally for Waterfall)
 const float SCALE = 2.f;
 const float OCTAVE_WIDTH = 164 * SCALE;
@@ -163,9 +165,25 @@ void PianoKey::draw() {
 	ofPopStyle();
 }
 
-void PianoKey::drawHistory(uint64_t currentTime, uint8_t track, uint8_t channel, const noteHistory_t & history, std::deque<channelHistory_t> events) {
+void PianoKey::drawHistory(
+	int64_t currentTime,
+	uint8_t track,
+	uint8_t channel,
+	const noteHistory_t & history,
+	std::deque<channelHistory_t> events,
+	bool reverseMode,
+	int64_t dispatchOffset,
+	int64_t removeOffset) {
+
 	const uint8_t USE_CC = 0;
 	const bool DECAY = true;
+
+	// Y position: normal mode = older is higher (+Y); reverse mode = future is higher (+Y)
+	auto toY = [&](int64_t t) -> float {
+		return reverseMode
+			? (float)(t - currentTime) * speed
+			: (float)(currentTime - t) * speed;
+	};
 
 	int noteInOctave = noteNumber % 12;
 	float velocityRatio = pow(history.velocity / 127.f, 0.5f);
@@ -191,9 +209,9 @@ void PianoKey::drawHistory(uint64_t currentTime, uint8_t track, uint8_t channel,
 		float z = 1.0;
 		float pedalZ = 0.0;
 
-		uint64_t tStart = std::max((int64_t)history.onTime, (int64_t)currentTime - 5'000'000);
-		uint64_t tFinal = history.offTime ? history.offTime : currentTime;
-		uint64_t tPedalFinal = history.pedalOffTime ? history.pedalOffTime : currentTime;
+		int64_t tStart = std::max(history.onTime, currentTime - removeOffset);
+		int64_t tFinal = std::min(history.offTime, currentTime + dispatchOffset);
+		int64_t tPedalFinal = std::min(history.pedalOffTime, currentTime + dispatchOffset);
 
 		// find the last CC event before tStart, and position nextEvent at the next CC event at/after tStart
 		auto advanceToCC = [&](std::deque<channelHistory_t>::iterator it) {
@@ -218,7 +236,7 @@ void PianoKey::drawHistory(uint64_t currentTime, uint8_t track, uint8_t channel,
 			: nextEvent != events.end()
 			? nextEvent->value
 			: 127;
-		uint64_t ccEventTime = curEvent != events.end()
+		int64_t ccEventTime = curEvent != events.end()
 			? curEvent->timestamp
 			: nextEvent != events.end()
 			? nextEvent->timestamp
@@ -226,14 +244,14 @@ void PianoKey::drawHistory(uint64_t currentTime, uint8_t track, uint8_t channel,
 
 		while (tStart < tFinal) {
 			int8_t nextCcValue = nextEvent != events.end() ? nextEvent->value : ccValue; // used for transition
-			uint64_t nextCcEventTime = nextEvent != events.end() ? nextEvent->timestamp : 0; // used for transition
-			uint64_t tEnd = nextCcEventTime ? std::min(nextCcEventTime, tFinal) : tFinal;
+			int64_t nextCcEventTime = nextEvent != events.end() ? nextEvent->timestamp : 0; // used for transition
+			int64_t tEnd = nextCcEventTime ? std::min(nextCcEventTime, tFinal) : tFinal;
 			bool needIterateFlag = nextEvent != events.end() && tFinal >= nextCcEventTime;
 
-			uint64_t tLength = tEnd - tStart;
+			int64_t tLength = tEnd - tStart;
 
-			const float top = (currentTime - tEnd) * speed;
-			const float bottom = (currentTime - tStart) * speed;
+			const float top = toY(tEnd);
+			const float bottom = toY(tStart);
 
 			const float bottomRatio = ccValue / 127.f;
 			const float topRatio = ccValue / 127.f;
@@ -275,18 +293,18 @@ void PianoKey::drawHistory(uint64_t currentTime, uint8_t track, uint8_t channel,
 			}
 		}
 
-		tStart = std::max((int64_t)tFinal, (int64_t)currentTime - 5'000'000);
+		tStart = std::max(tFinal, currentTime - removeOffset);
 
 		while (tStart < tPedalFinal) {
 			int8_t nextCcValue = nextEvent != events.end() ? nextEvent->value : ccValue; // used for transition
-			uint64_t nextCcEventTime = nextEvent != events.end() ? nextEvent->timestamp : 0; // used for transition
-			uint64_t tEnd = nextCcEventTime ? std::min(nextCcEventTime, tPedalFinal) : tPedalFinal;
+			int64_t nextCcEventTime = nextEvent != events.end() ? nextEvent->timestamp : 0; // used for transition
+			int64_t tEnd = nextCcEventTime ? std::min(nextCcEventTime, tPedalFinal) : tPedalFinal;
 			bool needIterateFlag = nextEvent != events.end() && tPedalFinal >= nextCcEventTime;
 
-			uint64_t tLength = tEnd - tStart;
+			int64_t tLength = tEnd - tStart;
 
-			const float top = (currentTime - tEnd) * speed;
-			const float bottom = (currentTime - tStart) * speed;
+			const float top = toY(tEnd);
+			const float bottom = toY(tStart);
 
 			const float bottomRatio = ccValue / 127.f;
 			const float topRatio = ccValue / 127.f;
@@ -336,18 +354,17 @@ void PianoKey::drawHistory(uint64_t currentTime, uint8_t track, uint8_t channel,
 		float z = 1.0;
 		float pedalZ = 0.0;
 
-		uint64_t tStart = std::max((int64_t)history.onTime, (int64_t)currentTime - 5'000'000);
-		uint64_t tFinal = history.offTime ? history.offTime : currentTime;
-		uint64_t tPedalFinal = history.pedalOffTime ? history.pedalOffTime : currentTime;
+		int64_t tStart = std::max(history.onTime, currentTime - removeOffset);
+		int64_t tFinal = std::min(history.offTime, currentTime + dispatchOffset);
+		int64_t tPedalFinal = std::min(history.pedalOffTime, currentTime + dispatchOffset);
 
-		for (uint64_t time = tStart; time < tFinal; time += TIME_SEGMENT) {
-			uint64_t tEnd = std::min(time + TIME_SEGMENT, tFinal);
-			uint64_t tLength = tEnd - tStart;
+		for (int64_t time = tStart; time < tFinal; time += TIME_SEGMENT) {
+			int64_t tEnd = std::min(time + TIME_SEGMENT, tFinal);
 
-			const float top = (currentTime - tEnd) * speed;
-			const float bottom = (currentTime - tStart) * speed;
+			const float top = toY(tEnd);
+			const float bottom = toY(time);
 
-			const float bottomRatio = pow(DECAY_RATE, (tStart - history.onTime) / TIME_SEGMENT);
+			const float bottomRatio = pow(DECAY_RATE, (time - history.onTime) / TIME_SEGMENT);
 			const float topRatio = pow(DECAY_RATE, (tEnd - history.onTime) / TIME_SEGMENT);
 
 			ofColor bottomColor = BASE_COLOR;
@@ -377,19 +394,18 @@ void PianoKey::drawHistory(uint64_t currentTime, uint8_t track, uint8_t channel,
 			ofDisableAlphaBlending();
 			ofPopStyle();
 
-			tStart = time;
+			tStart = tEnd;
 		}
 
-		tStart = std::max((int64_t)tFinal, (int64_t)currentTime - 5'000'000);
+		tStart = std::max(tFinal, currentTime - removeOffset);
 
-		for (uint64_t time = tStart; time < tPedalFinal; time += TIME_SEGMENT) {
-			uint64_t tEnd = std::min(time + TIME_SEGMENT, tPedalFinal);
-			uint64_t tLength = tEnd - tStart;
+		for (int64_t time = tStart; time < tPedalFinal; time += TIME_SEGMENT) {
+			int64_t tEnd = std::min(time + TIME_SEGMENT, tPedalFinal);
 
-			const float top = (currentTime - tEnd) * speed;
-			const float bottom = (currentTime - tStart) * speed;
+			const float top = toY(tEnd);
+			const float bottom = toY(time);
 
-			const float bottomRatio = pow(DECAY_RATE, (tStart - history.onTime) / TIME_SEGMENT);
+			const float bottomRatio = pow(DECAY_RATE, (time - history.onTime) / TIME_SEGMENT);
 			const float topRatio = pow(DECAY_RATE, (tEnd - history.onTime) / TIME_SEGMENT);
 
 			ofColor bottomColor = PEDAL_COLOR;
@@ -419,12 +435,16 @@ void PianoKey::drawHistory(uint64_t currentTime, uint8_t track, uint8_t channel,
 			ofDisableAlphaBlending();
 			ofPopStyle();
 
-			tStart = time;
+			tStart = tEnd;
 		}
 	} else {
-		const float top = (currentTime - history.onTime) * speed;
-		const float bottom = history.offTime ? (currentTime - history.offTime) * speed : 0;
-		const float pedalBottom = history.pedalOffTime ? (currentTime - history.pedalOffTime) * speed : 0;
+		int64_t tStart = std::max(history.onTime, currentTime - removeOffset);
+		int64_t tFinal = std::min(history.offTime, currentTime + dispatchOffset);
+		int64_t tPedalFinal = std::min(history.pedalOffTime, currentTime + dispatchOffset);
+
+		const float top = toY(tStart);
+		const float bottom = toY(tFinal);
+		const float pedalBottom = toY(tPedalFinal);
 		const float h = top - bottom;
 		const float pedalH = bottom - pedalBottom;
 

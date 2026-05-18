@@ -11,7 +11,7 @@ public:
 		std::vector<std::array<std::deque<channelHistory_t>, 16>> & channelHistories);
 
 	void setup();
-	void draw(uint64_t currentTime);
+	void draw(int64_t currentTime, bool reverseMode, int64_t dispatchOffset, int64_t removeOffset);
 
 	std::vector<PianoKey> keys;
 

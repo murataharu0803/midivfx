@@ -41,7 +41,7 @@ public:
 	void newMidiMessage(ofxMidiMessage & event) override;
 
 	// time
-	uint64_t currentTime = 0;
+	int64_t currentTime = 0;
 
 	// MIDI
 	ofxMidiIn midiIn;
@@ -57,8 +57,13 @@ public:
 	// MIDI file playback
 	static constexpr bool useMidiFile = true;
 	static constexpr const char * midiFilePath = "song.mid"; // place in bin/data/
+	static constexpr int64_t dispatchOffset = 0; // how early before onTime to create history entry
+	static constexpr int64_t removeOffset = 5'000'000; // how long after offTime or PedalOffTime to keep entry
+	static constexpr bool reverseMode = false; // true = notes fall downward toward piano
+
 	struct MidiFileEvent {
-		uint64_t timeUs;
+		int64_t timeUs; // actual note-on/event time (relative to playbackStartTime)
+		int64_t offTimeUs; // note-off time (0 if not a note-on or unlinked)
 		uint8_t status;
 		uint8_t track; // 0-based track index
 		uint8_t channel; // 0-based MIDI channel (0-15)
@@ -67,9 +72,9 @@ public:
 	};
 	vector<MidiFileEvent> midiFileEvents;
 	size_t playbackHead = 0;
-	uint64_t playbackStartTime = 0;
+	int64_t playbackStartTime = -5'000'000;
 
 private:
-	void processMidiMessage(ofxMidiMessage & event, uint8_t track);
+	void processMidiMessage(ofxMidiMessage & event, uint8_t track, int64_t timestamp);
 	void initTracks(int count);
 };

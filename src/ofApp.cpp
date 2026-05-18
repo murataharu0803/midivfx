@@ -3,6 +3,7 @@
 #include "ofApp.h"
 
 const int MAX_HISTORY_SIZE = 1024;
+const int64_t MAX_TIME = std::numeric_limits<int64_t>::max();
 
 void ofApp::initTracks(int count) {
 	keyStatuses.resize(count);
@@ -42,6 +43,7 @@ void ofApp::setup() {
 			smf::MidiFile & smf = mf.get();
 			ofLogNotice() << "Tracks: " << smf.getTrackCount();
 			smf.doTimeAnalysis();
+			smf.linkNotePairs(); // populates ev.getLinkedEvent() for note-ons
 
 			initTracks(smf.getTrackCount());
 
@@ -49,8 +51,16 @@ void ofApp::setup() {
 				for (int i = 0; i < smf[t].size(); ++i) {
 					smf::MidiEvent & ev = smf[t][i];
 					if (!ev.isNoteOn() && !ev.isNoteOff() && !ev.isController()) continue;
+
+					int64_t onTimeUs = (int64_t)(ev.seconds * 1'000'000);
+					int64_t offTimeUs = onTimeUs + 10'000;
+					if (ev.isNoteOn() && ev.getVelocity() > 0 && ev.isLinked()) {
+						offTimeUs = (int64_t)(ev.getLinkedEvent()->seconds * 1'000'000);
+					}
+
 					midiFileEvents.push_back({
-						(uint64_t)(ev.seconds * 1'000'000),
+						onTimeUs,
+						offTimeUs,
 						(uint8_t)(ev[0] & 0xF0),
 						(uint8_t)t,
 						(uint8_t)ev.getChannel(), // 0-based
@@ -61,7 +71,6 @@ void ofApp::setup() {
 			}
 			std::sort(midiFileEvents.begin(), midiFileEvents.end(),
 				[](const MidiFileEvent & a, const MidiFileEvent & b) { return a.timeUs < b.timeUs; });
-			playbackStartTime = currentTime;
 		}
 	} else {
 		initTracks(1); // one track per port; extend here for multi-port
@@ -76,11 +85,11 @@ void ofApp::setup() {
 }
 
 void ofApp::update() {
-	currentTime = ofGetElapsedTimeMicros();
+	currentTime = ofGetElapsedTimeMicros() + playbackStartTime;
 
 	if (useMidiFile) {
-		uint64_t playbackTime = currentTime - playbackStartTime;
-		while (playbackHead < midiFileEvents.size() && midiFileEvents[playbackHead].timeUs <= playbackTime) {
+		int64_t lookaheadTime = currentTime + dispatchOffset;
+		while (playbackHead < midiFileEvents.size() && midiFileEvents[playbackHead].timeUs <= lookaheadTime) {
 			auto & e = midiFileEvents[playbackHead++];
 			ofxMidiMessage msg;
 			msg.status = (MidiStatus)(e.status);
@@ -88,7 +97,7 @@ void ofApp::update() {
 			msg.pitch = e.data1;
 			msg.velocity = e.data2;
 			msg.value = e.data2;
-			processMidiMessage(msg, e.track);
+			processMidiMessage(msg, e.track, e.timeUs);
 		}
 	}
 
@@ -107,12 +116,12 @@ void ofApp::update() {
 		pianoKeys.keys[i].setActive(active);
 	}
 
-	// Remove old note history
+	// Remove old note history entries (past removeOffset after pedalOffTime)
 	for (auto & trackHistories : noteHistories) {
 		for (auto & noteHistVector : trackHistories) {
 			while (!noteHistVector.empty()) {
-				uint64_t pedalOffTime = noteHistVector.front().pedalOffTime;
-				if (pedalOffTime > 0 && (int64_t)pedalOffTime < (int64_t)currentTime - 5'000'000) {
+				int64_t pedalOffTime = noteHistVector.front().pedalOffTime;
+				if (pedalOffTime < currentTime - removeOffset) {
 					noteHistVector.pop_front();
 				} else {
 					break;
@@ -131,7 +140,7 @@ void ofApp::draw() {
 	// pointLight.enable();
 
 	// Draw piano keys on top
-	pianoKeys.draw(currentTime);
+	pianoKeys.draw(currentTime, reverseMode, dispatchOffset, removeOffset);
 
 	// Disable lights before 2D drawing
 	// pointLight.disable();
@@ -173,10 +182,10 @@ void ofApp::gotMessage(ofMessage msg) { }
 void ofApp::dragEvent(ofDragInfo dragInfo) { }
 
 void ofApp::newMidiMessage(ofxMidiMessage & event) {
-	processMidiMessage(event, 0); // live MIDI always maps to track 0
+	processMidiMessage(event, 0, currentTime); // live MIDI always maps to track 0
 }
 
-void ofApp::processMidiMessage(ofxMidiMessage & event, uint8_t track) {
+void ofApp::processMidiMessage(ofxMidiMessage & event, uint8_t track, int64_t timestamp) {
 	if (track >= keyStatuses.size()) {
 		ofLogWarning() << "processMidiMessage: track " << track << " out of range";
 		return;
@@ -193,7 +202,7 @@ void ofApp::processMidiMessage(ofxMidiMessage & event, uint8_t track) {
 		histories.pop_front();
 	}
 	histories.push_back({
-		currentTime,
+		timestamp,
 		status,
 		static_cast<uint8_t>(event.pitch),
 		static_cast<uint8_t>(event.control),
@@ -236,7 +245,7 @@ void ofApp::processMidiMessage(ofxMidiMessage & event, uint8_t track) {
 			noteHistVector.begin(),
 			noteHistVector.end(),
 			[&](const noteHistory_t & nh) {
-				return nh.pitch == event.pitch && nh.offTime == 0;
+				return nh.pitch == event.pitch && nh.offTime >= MAX_TIME;
 			});
 		if (noteHistory == noteHistVector.end()) {
 			// find one that is still pedaled
@@ -244,10 +253,10 @@ void ofApp::processMidiMessage(ofxMidiMessage & event, uint8_t track) {
 				noteHistVector.begin(),
 				noteHistVector.end(),
 				[&](const noteHistory_t & nh) {
-					return nh.pitch == event.pitch && nh.offTime && nh.pedalOffTime == 0;
+					return nh.pitch == event.pitch && nh.offTime && nh.pedalOffTime >= MAX_TIME;
 				});
 			if (pedalNoteHistory != noteHistVector.end()) {
-				pedalNoteHistory->pedalOffTime = currentTime;
+				pedalNoteHistory->pedalOffTime = timestamp;
 			}
 			// first check size limit
 			if (noteHistVector.size() > MAX_HISTORY_SIZE - 1) {
@@ -255,9 +264,9 @@ void ofApp::processMidiMessage(ofxMidiMessage & event, uint8_t track) {
 			}
 			// and then create history
 			noteHistVector.push_back({
-				currentTime,
-				0,
-				0,
+				timestamp,
+				MAX_TIME,
+				MAX_TIME,
 				static_cast<uint8_t>(event.pitch),
 				static_cast<uint8_t>(event.velocity),
 			});
@@ -267,18 +276,18 @@ void ofApp::processMidiMessage(ofxMidiMessage & event, uint8_t track) {
 			noteHistVector.begin(),
 			noteHistVector.end(),
 			[&](const noteHistory_t & nh) {
-				return nh.pitch == event.pitch && nh.offTime == 0;
+				return nh.pitch == event.pitch && nh.offTime >= MAX_TIME;
 			});
 		if (noteHistory != noteHistVector.end()) {
-			noteHistory->offTime = currentTime;
+			noteHistory->offTime = timestamp;
 			if (!channelPedalDown) {
-				noteHistory->pedalOffTime = currentTime;
+				noteHistory->pedalOffTime = timestamp;
 			}
 		}
 	} else if (oldChannelPedalDown && !channelPedalDown) { // Pedal released
 		for (auto & noteHistory : noteHistVector) {
 			if (!noteHistory.pedalOffTime && noteHistory.offTime) {
-				noteHistory.pedalOffTime = currentTime;
+				noteHistory.pedalOffTime = timestamp;
 			}
 		}
 	}

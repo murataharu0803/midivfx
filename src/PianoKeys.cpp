@@ -13,7 +13,7 @@ void PianoKeys::setup() {
 	}
 }
 
-void PianoKeys::draw(uint64_t currentTime) {
+void PianoKeys::draw(int64_t currentTime, bool reverseMode, int64_t dispatchOffset, int64_t removeOffset) {
 	ofPushMatrix();
 	{
 		ofTranslate(-PianoKey::getKeysWidth(0, 127) / 2, 0, 0);
@@ -25,7 +25,7 @@ void PianoKeys::draw(uint64_t currentTime) {
 				auto & historyVector = noteHistories[t][c];
 				auto & events = channelHistories[t][c];
 				for (const auto & history : historyVector) {
-					keys[history.pitch].drawHistory(currentTime, t, c, history, events);
+					keys[history.pitch].drawHistory(currentTime, t, c, history, events, reverseMode, dispatchOffset, removeOffset);
 				}
 			}
 		}
