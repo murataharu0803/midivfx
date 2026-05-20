@@ -1,6 +1,12 @@
 <?xml version="1.0"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup>
+		<ClCompile Include="src\MidiFileLoader.cpp">
+			<Filter>src</Filter>
+		</ClCompile>
+		<ClCompile Include="src\MidiProcessor.cpp">
+			<Filter>src</Filter>
+		</ClCompile>
 		<ClCompile Include="src\ofApp.cpp">
 			<Filter>src</Filter>
 		</ClCompile>
@@ -110,6 +116,15 @@
 		</Filter>
 	</ItemGroup>
 	<ItemGroup>
+		<ClInclude Include="src\ChannelState.h">
+			<Filter>src</Filter>
+		</ClInclude>
+		<ClInclude Include="src\MidiFileLoader.h">
+			<Filter>src</Filter>
+		</ClInclude>
+		<ClInclude Include="src\MidiProcessor.h">
+			<Filter>src</Filter>
+		</ClInclude>
 		<ClInclude Include="src\ofApp.h">
 			<Filter>src</Filter>
 		</ClInclude>

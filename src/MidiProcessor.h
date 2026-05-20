@@ -1,0 +1,16 @@
+#pragma once
+
+#include <array>
+#include <vector>
+
+#include "ofxMidi.h"
+#include "ChannelState.h"
+
+class MidiProcessor {
+public:
+	// [track][channel(0-based)] — track count set at initTracks; 16 channels fixed by MIDI spec
+	std::vector<std::array<ChannelState, 16>> channels;
+
+	void initTracks(int count);
+	void processMidiMessage(ofxMidiMessage & event, uint8_t track, int64_t timestamp);
+};

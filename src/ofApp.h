@@ -1,13 +1,12 @@
 #pragma once
 
 #include "ofMain.h"
-
 #include "ofxMidi.h"
-#include "ofxMidifile.h"
 
+#include "MidiProcessor.h"
+#include "MidiFileLoader.h"
 #include "PianoKeys.h"
 #include "midiUtil.h"
-#include "ChannelState.h"
 
 using namespace std;
 
@@ -46,11 +45,10 @@ public:
 
 	// MIDI
 	ofxMidiIn midiIn;
-	// [track][channel(0-based)] — track count set at setup; 16 channels fixed by MIDI spec
-	vector<array<ChannelState, 16>> channels;
+	MidiProcessor midiProcessor;
 
 	// visual objects
-	PianoKeys pianoKeys = PianoKeys(channels);
+	PianoKeys pianoKeys = PianoKeys(midiProcessor.channels);
 
 	// MIDI file playback
 	static constexpr bool useMidiFile = true;
@@ -63,8 +61,4 @@ public:
 	vector<BeatEvent> beatEvents;
 	size_t playbackHead = 0;
 	int64_t playbackStartTime = -5'000'000;
-
-private:
-	void processMidiMessage(ofxMidiMessage & event, uint8_t track, int64_t timestamp);
-	void initTracks(int count);
 };
