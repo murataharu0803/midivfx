@@ -4,6 +4,7 @@
 
 const int MAX_HISTORY_SIZE = 1024;
 const int64_t MAX_TIME = std::numeric_limits<int64_t>::max();
+const float speed = .001f;
 
 void ofApp::initTracks(int count) {
 	keyStatuses.resize(count);
@@ -44,6 +45,58 @@ void ofApp::setup() {
 			ofLogNotice() << "Tracks: " << smf.getTrackCount();
 			smf.doTimeAnalysis();
 			smf.linkNotePairs(); // populates ev.getLinkedEvent() for note-ons
+
+			// Extract beat timestamps with bar position
+			int tpq = smf.getTPQ();
+			int maxTick = 0;
+			for (int t = 0; t < smf.getTrackCount(); ++t) {
+				if (smf[t].size() > 0) maxTick = std::max(maxTick, smf[t].last().tick);
+			}
+
+			// Collect time signature events (meta type 0x58)
+			struct TimeSig {
+				int tick;
+				int num;
+				int denPow;
+			};
+			std::vector<TimeSig> timeSigs;
+			for (int t = 0; t < smf.getTrackCount(); ++t) {
+				for (int i = 0; i < smf[t].size(); ++i) {
+					smf::MidiEvent & ev = smf[t][i];
+					if (ev.isMetaMessage() && ev[1] == 0x58 && ev.size() >= 6) {
+						timeSigs.push_back({ ev.tick, (int)(uint8_t)ev[3], (int)(uint8_t)ev[4] });
+					}
+				}
+			}
+			std::sort(timeSigs.begin(), timeSigs.end(), [](const TimeSig & a, const TimeSig & b) {
+				return a.tick < b.tick;
+			});
+
+			// Remove duplicates at the same tick (keep last)
+			timeSigs.erase(std::unique(timeSigs.begin(), timeSigs.end(), [](const TimeSig & a, const TimeSig & b) {
+				return a.tick == b.tick;
+			}),
+				timeSigs.end());
+			if (timeSigs.empty() || timeSigs[0].tick > 0) {
+				timeSigs.insert(timeSigs.begin(), { 0, 4, 2 }); // default 4/4 from start
+			}
+
+			// Generate beat events segment by segment (one segment per time signature)
+			int sigCount = (int)timeSigs.size();
+			for (int si = 0; si < sigCount; ++si) {
+				int segStart = timeSigs[si].tick;
+				int segEnd = (si + 1 < sigCount) ? timeSigs[si + 1].tick : maxTick + 1;
+				// Number of quarter-note beats per bar for this time signature
+				int den = 1 << timeSigs[si].denPow;
+				int quarterBeatsPerBeat = 4 / den;
+				int quarterBeatsPerBar = timeSigs[si].num * quarterBeatsPerBeat;
+				if (quarterBeatsPerBar <= 0) quarterBeatsPerBar = 4;
+
+				for (int tick = segStart; tick < segEnd && tick <= maxTick; tick += tpq * quarterBeatsPerBeat) {
+					int beatInBar = ((tick - segStart) / tpq) % quarterBeatsPerBar;
+					beatEvents.push_back({ (int64_t)(smf.getTimeInSeconds(tick) * 1'000'000), (float)beatInBar });
+				}
+			}
 
 			initTracks(smf.getTrackCount());
 
@@ -138,6 +191,32 @@ void ofApp::draw() {
 	// Enable lights
 	directionalLight.enable();
 	// pointLight.enable();
+
+	// Draw beat lines
+	if (!beatEvents.empty()) {
+		const float totalWidth = PianoKey::getKeysWidth(0, 127);
+		const int64_t visibleStart = currentTime - removeOffset;
+		const int64_t visibleEnd = currentTime + dispatchOffset;
+
+		auto toY = [&](int64_t t) -> float {
+			return reverseMode
+				? (float)(t - currentTime) * speed
+				: (float)(currentTime - t) * speed;
+		};
+
+		ofPushStyle();
+		ofDisableLighting();
+		for (const auto & beatEvent : beatEvents) {
+			if (beatEvent.timeUs < visibleStart || beatEvent.timeUs > visibleEnd) continue;
+			float y = toY(beatEvent.timeUs);
+			bool isDownbeat = (beatEvent.beatInBar == 0.0f);
+			ofSetColor(isDownbeat ? ofColor(255, 255, 255, 140) : ofColor(255, 255, 255, 40));
+			ofSetLineWidth(isDownbeat ? 2.0f : 1.0f);
+			ofDrawLine(-totalWidth / 2, y, 0, totalWidth / 2, y, 0);
+		}
+		ofEnableLighting();
+		ofPopStyle();
+	}
 
 	// Draw piano keys on top
 	pianoKeys.draw(currentTime, reverseMode, dispatchOffset, removeOffset);

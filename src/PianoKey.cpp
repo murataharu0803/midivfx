@@ -1,6 +1,6 @@
 #include "PianoKey.h"
 
-const int64_t MAX_TIME = std::numeric_limits<int64_t>::max();
+extern const int64_t MAX_TIME;
 
 // layout constants (exposed externally for Waterfall)
 const float SCALE = 2.f;

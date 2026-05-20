@@ -61,16 +61,8 @@ public:
 	static constexpr int64_t removeOffset = 5'000'000; // how long after offTime or PedalOffTime to keep entry
 	static constexpr bool reverseMode = false; // true = notes fall downward toward piano
 
-	struct MidiFileEvent {
-		int64_t timeUs; // actual note-on/event time (relative to playbackStartTime)
-		int64_t offTimeUs; // note-off time (0 if not a note-on or unlinked)
-		uint8_t status;
-		uint8_t track; // 0-based track index
-		uint8_t channel; // 0-based MIDI channel (0-15)
-		uint8_t data1;
-		uint8_t data2;
-	};
 	vector<MidiFileEvent> midiFileEvents;
+	vector<BeatEvent> beatEvents;
 	size_t playbackHead = 0;
 	int64_t playbackStartTime = -5'000'000;
 

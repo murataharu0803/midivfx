@@ -33,3 +33,18 @@ struct percussionMapping_t {
 	uint8_t mapEndPitch;
 	bool isSuppressed;
 };
+
+struct MidiFileEvent {
+	int64_t timeUs; // actual note-on/event time (relative to playbackStartTime)
+	int64_t offTimeUs; // note-off time (0 if not a note-on or unlinked)
+	uint8_t status;
+	uint8_t track; // 0-based track index
+	uint8_t channel; // 0-based MIDI channel (0-15)
+	uint8_t data1;
+	uint8_t data2;
+};
+
+struct BeatEvent {
+	int64_t timeUs;
+	float beatInBar;
+};
