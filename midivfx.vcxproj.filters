@@ -7,6 +7,9 @@
 		<ClCompile Include="src\MidiProcessor.cpp">
 			<Filter>src</Filter>
 		</ClCompile>
+		<ClCompile Include="src\NoteHistoryRenderer.cpp">
+			<Filter>src</Filter>
+		</ClCompile>
 		<ClCompile Include="src\ofApp.cpp">
 			<Filter>src</Filter>
 		</ClCompile>
@@ -123,6 +126,9 @@
 			<Filter>src</Filter>
 		</ClInclude>
 		<ClInclude Include="src\MidiProcessor.h">
+			<Filter>src</Filter>
+		</ClInclude>
+		<ClInclude Include="src\NoteHistoryRenderer.h">
 			<Filter>src</Filter>
 		</ClInclude>
 		<ClInclude Include="src\ofApp.h">

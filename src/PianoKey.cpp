@@ -1,8 +1,6 @@
 #include "PianoKey.h"
 
-extern const int64_t MAX_TIME;
-
-// layout constants (exposed externally for Waterfall)
+// layout constants
 const float SCALE = 2.f;
 const float OCTAVE_WIDTH = 164 * SCALE;
 const float WHITE_KEY_WIDTH = 23 * SCALE;
@@ -11,7 +9,6 @@ const float WHITE_KEY_HEIGHT = 150 * SCALE;
 const float BLACK_KEY_HEIGHT = 100 * SCALE;
 
 const float padding = 2.f; // padding between keys
-const float speed = .001f;
 
 // Which notes are black keys
 const bool BLACK_KEY_PATTERN[12] = {
@@ -170,31 +167,20 @@ void PianoKey::drawHistory(
 	uint8_t track,
 	uint8_t channel,
 	const noteHistory_t & history,
-	std::deque<channelHistory_t> events,
+	const std::deque<channelHistory_t> & events,
 	bool reverseMode,
 	int64_t dispatchOffset,
-	int64_t removeOffset) {
-
-	const uint8_t USE_CC = 0;
-	const bool DECAY = true;
-
-	// Y position: normal mode = older is higher (+Y); reverse mode = future is higher (+Y)
-	auto toY = [&](int64_t t) -> float {
-		return reverseMode
-			? (float)(t - currentTime) * speed
-			: (float)(currentTime - t) * speed;
-	};
+	int64_t removeOffset,
+	NoteRenderMode mode) {
 
 	int noteInOctave = noteNumber % 12;
-	float velocityRatio = pow(history.velocity / 127.f, 0.5f);
-	const ofColor BASE_COLOR(255, 64, 0);
-	const ofColor PEDAL_COLOR(128, 128, 128);
 
+	// Resolve percussion mapping to determine display position and width
 	auto mapping = std::find_if(
 		percussionMappings.begin(),
 		percussionMappings.end(),
-		[&](const percussionMapping_t & mapping) {
-			return mapping.track == track && mapping.channel == channel && noteNumber == mapping.pitch;
+		[&](const percussionMapping_t & m) {
+			return m.track == track && m.channel == channel && noteNumber == m.pitch;
 		});
 	const float finalPosX = mapping != percussionMappings.end()
 		? (calculatePosition(mapping->mapEndPitch + 1) + calculatePosition(mapping->mapStartPitch)) / 2
@@ -203,261 +189,8 @@ void PianoKey::drawHistory(
 		? calculatePosition(mapping->mapEndPitch + 1) - calculatePosition(mapping->mapStartPitch)
 		: KEY_ROOT_WIDTHS[noteInOctave];
 
-	if (USE_CC) {
-		float x1 = finalPosX - w / 2;
-		float x2 = finalPosX + w / 2;
-		float z = 1.0;
-		float pedalZ = 0.0;
-
-		int64_t tStart = std::max(history.onTime, currentTime - removeOffset);
-		int64_t tFinal = std::min(history.offTime, currentTime + dispatchOffset);
-		int64_t tPedalFinal = std::min(history.pedalOffTime, currentTime + dispatchOffset);
-
-		// find the last CC event before tStart, and position nextEvent at the next CC event at/after tStart
-		auto advanceToCC = [&](std::deque<channelHistory_t>::iterator it) {
-			while (it != events.end() && !(it->status == MIDI_CONTROL_CHANGE && it->control == USE_CC)) {
-				++it;
-			}
-			return it;
-		};
-
-		std::deque<channelHistory_t>::iterator nextEvent = events.begin();
-		std::deque<channelHistory_t>::iterator curEvent = events.end();
-		while (nextEvent != events.end() && nextEvent->timestamp < tStart) {
-			if (nextEvent->status == MIDI_CONTROL_CHANGE && nextEvent->control == USE_CC) {
-				curEvent = nextEvent;
-			}
-			++nextEvent;
-		}
-		nextEvent = advanceToCC(nextEvent);
-
-		int8_t ccValue = curEvent != events.end()
-			? curEvent->value
-			: nextEvent != events.end()
-			? nextEvent->value
-			: 127;
-		int64_t ccEventTime = curEvent != events.end()
-			? curEvent->timestamp
-			: nextEvent != events.end()
-			? nextEvent->timestamp
-			: 0;
-
-		while (tStart < tFinal) {
-			int8_t nextCcValue = nextEvent != events.end() ? nextEvent->value : ccValue; // used for transition
-			int64_t nextCcEventTime = nextEvent != events.end() ? nextEvent->timestamp : 0; // used for transition
-			int64_t tEnd = nextCcEventTime ? std::min(nextCcEventTime, tFinal) : tFinal;
-			bool needIterateFlag = nextEvent != events.end() && tFinal >= nextCcEventTime;
-
-			int64_t tLength = tEnd - tStart;
-
-			const float top = toY(tEnd);
-			const float bottom = toY(tStart);
-
-			const float bottomRatio = ccValue / 127.f;
-			const float topRatio = ccValue / 127.f;
-
-			ofColor bottomColor = BASE_COLOR;
-			bottomColor.a = 255 * bottomRatio;
-
-			ofColor topColor = BASE_COLOR;
-			topColor.a = 255 * topRatio;
-
-			ofPushStyle();
-			ofEnableAlphaBlending();
-			{
-				ofMesh mesh;
-				mesh.setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
-
-				mesh.addVertex(ofVec3f(x1, bottom, z));
-				mesh.addColor(bottomColor);
-				mesh.addVertex(ofVec3f(x2, bottom, z));
-				mesh.addColor(bottomColor);
-
-				mesh.addVertex(ofVec3f(x1, top, z));
-				mesh.addColor(topColor);
-				mesh.addVertex(ofVec3f(x2, top, z));
-				mesh.addColor(topColor);
-
-				mesh.draw();
-			}
-			ofDisableAlphaBlending();
-			ofPopStyle();
-
-			tStart = tEnd;
-			if (needIterateFlag) {
-				ccValue = nextCcValue;
-				ccEventTime = nextCcEventTime;
-				nextEvent = advanceToCC(++nextEvent);
-			} else {
-				break;
-			}
-		}
-
-		tStart = std::max(tFinal, currentTime - removeOffset);
-
-		while (tStart < tPedalFinal) {
-			int8_t nextCcValue = nextEvent != events.end() ? nextEvent->value : ccValue; // used for transition
-			int64_t nextCcEventTime = nextEvent != events.end() ? nextEvent->timestamp : 0; // used for transition
-			int64_t tEnd = nextCcEventTime ? std::min(nextCcEventTime, tPedalFinal) : tPedalFinal;
-			bool needIterateFlag = nextEvent != events.end() && tPedalFinal >= nextCcEventTime;
-
-			int64_t tLength = tEnd - tStart;
-
-			const float top = toY(tEnd);
-			const float bottom = toY(tStart);
-
-			const float bottomRatio = ccValue / 127.f;
-			const float topRatio = ccValue / 127.f;
-
-			ofColor bottomColor = PEDAL_COLOR;
-			bottomColor.a = 255 * bottomRatio;
-
-			ofColor topColor = PEDAL_COLOR;
-			topColor.a = 255 * topRatio;
-
-			ofPushStyle();
-			ofEnableAlphaBlending();
-			{
-				ofMesh mesh;
-				mesh.setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
-
-				mesh.addVertex(ofVec3f(x1, bottom, z));
-				mesh.addColor(bottomColor);
-				mesh.addVertex(ofVec3f(x2, bottom, z));
-				mesh.addColor(bottomColor);
-
-				mesh.addVertex(ofVec3f(x1, top, z));
-				mesh.addColor(topColor);
-				mesh.addVertex(ofVec3f(x2, top, z));
-				mesh.addColor(topColor);
-
-				mesh.draw();
-			}
-			ofDisableAlphaBlending();
-			ofPopStyle();
-
-			tStart = tEnd;
-			if (needIterateFlag) {
-				ccValue = nextCcValue;
-				ccEventTime = nextCcEventTime;
-				nextEvent = advanceToCC(++nextEvent);
-			} else {
-				break;
-			}
-		}
-	} else if (DECAY) {
-		const int TIME_SEGMENT = 100000; // us
-		const float DECAY_RATE = 0.95f; // decay ratio for every time segment
-
-		float x1 = finalPosX - w / 2;
-		float x2 = finalPosX + w / 2;
-		float z = 1.0;
-		float pedalZ = 0.0;
-
-		int64_t tStart = std::max(history.onTime, currentTime - removeOffset);
-		int64_t tFinal = std::min(history.offTime, currentTime + dispatchOffset);
-		int64_t tPedalFinal = std::min(history.pedalOffTime, currentTime + dispatchOffset);
-
-		for (int64_t time = tStart; time < tFinal; time += TIME_SEGMENT) {
-			int64_t tEnd = std::min(time + TIME_SEGMENT, tFinal);
-
-			const float top = toY(tEnd);
-			const float bottom = toY(time);
-
-			const float bottomRatio = pow(DECAY_RATE, (time - history.onTime) / TIME_SEGMENT);
-			const float topRatio = pow(DECAY_RATE, (tEnd - history.onTime) / TIME_SEGMENT);
-
-			ofColor bottomColor = BASE_COLOR;
-			bottomColor.a = 255 * bottomRatio * velocityRatio;
-
-			ofColor topColor = BASE_COLOR;
-			topColor.a = 255 * topRatio * velocityRatio;
-
-			ofPushStyle();
-			ofEnableAlphaBlending();
-			{
-				ofMesh mesh;
-				mesh.setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
-
-				mesh.addVertex(ofVec3f(x1, bottom, z));
-				mesh.addColor(bottomColor);
-				mesh.addVertex(ofVec3f(x2, bottom, z));
-				mesh.addColor(bottomColor);
-
-				mesh.addVertex(ofVec3f(x1, top, z));
-				mesh.addColor(topColor);
-				mesh.addVertex(ofVec3f(x2, top, z));
-				mesh.addColor(topColor);
-
-				mesh.draw();
-			}
-			ofDisableAlphaBlending();
-			ofPopStyle();
-
-			tStart = tEnd;
-		}
-
-		tStart = std::max(tFinal, currentTime - removeOffset);
-
-		for (int64_t time = tStart; time < tPedalFinal; time += TIME_SEGMENT) {
-			int64_t tEnd = std::min(time + TIME_SEGMENT, tPedalFinal);
-
-			const float top = toY(tEnd);
-			const float bottom = toY(time);
-
-			const float bottomRatio = pow(DECAY_RATE, (time - history.onTime) / TIME_SEGMENT);
-			const float topRatio = pow(DECAY_RATE, (tEnd - history.onTime) / TIME_SEGMENT);
-
-			ofColor bottomColor = PEDAL_COLOR;
-			bottomColor.a = 255 * bottomRatio * velocityRatio;
-
-			ofColor topColor = PEDAL_COLOR;
-			topColor.a = 255 * topRatio * velocityRatio;
-
-			ofPushStyle();
-			ofEnableAlphaBlending();
-			{
-				ofMesh mesh;
-				mesh.setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
-
-				mesh.addVertex(ofVec3f(x1, bottom, pedalZ));
-				mesh.addColor(bottomColor);
-				mesh.addVertex(ofVec3f(x2, bottom, pedalZ));
-				mesh.addColor(bottomColor);
-
-				mesh.addVertex(ofVec3f(x1, top, pedalZ));
-				mesh.addColor(topColor);
-				mesh.addVertex(ofVec3f(x2, top, pedalZ));
-				mesh.addColor(topColor);
-
-				mesh.draw();
-			}
-			ofDisableAlphaBlending();
-			ofPopStyle();
-
-			tStart = tEnd;
-		}
-	} else {
-		int64_t tStart = std::max(history.onTime, currentTime - removeOffset);
-		int64_t tFinal = std::min(history.offTime, currentTime + dispatchOffset);
-		int64_t tPedalFinal = std::min(history.pedalOffTime, currentTime + dispatchOffset);
-
-		const float top = toY(tStart);
-		const float bottom = toY(tFinal);
-		const float pedalBottom = toY(tPedalFinal);
-		const float h = top - bottom;
-		const float pedalH = bottom - pedalBottom;
-
-		ofPushStyle();
-		ofSetColor(BASE_COLOR);
-		ofDrawBox(finalPosX, (top + bottom) / 2, 0, w, h, 1);
-		ofPopStyle();
-
-		ofPushStyle();
-		ofSetColor(PEDAL_COLOR); // Gray when pedal is down
-		ofDrawBox(finalPosX, (bottom + pedalBottom) / 2, 0, w, pedalH, 1);
-		ofPopStyle();
-	}
+	NoteHistoryRenderer::draw(currentTime, track, channel, finalPosX, w,
+		history, events, reverseMode, dispatchOffset, removeOffset, mode);
 }
 
 void PianoKey::setActive(bool active) {

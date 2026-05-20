@@ -229,6 +229,7 @@
 		<ClCompile Include="src\main.cpp" />
 		<ClCompile Include="src\MidiFileLoader.cpp" />
 		<ClCompile Include="src\MidiProcessor.cpp" />
+		<ClCompile Include="src\NoteHistoryRenderer.cpp" />
 		<ClCompile Include="src\ofApp.cpp" />
 		<ClCompile Include="src\PianoKey.cpp" />
 		<ClCompile Include="src\PianoKeys.cpp" />
@@ -265,6 +266,7 @@
 		<ClInclude Include="src\ChannelState.h" />
 		<ClInclude Include="src\MidiFileLoader.h" />
 		<ClInclude Include="src\MidiProcessor.h" />
+		<ClInclude Include="src\NoteHistoryRenderer.h" />
 		<ClInclude Include="src\ofApp.h" />
 		<ClInclude Include="src\PianoKey.h" />
 		<ClInclude Include="src\PianoKeys.h" />
