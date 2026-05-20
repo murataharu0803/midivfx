@@ -1,10 +1,7 @@
 #include "PianoKeys.h"
 
-PianoKeys::PianoKeys(
-	std::vector<std::array<std::deque<noteHistory_t>, 16>> & noteHistories,
-	std::vector<std::array<std::deque<channelHistory_t>, 16>> & channelHistories)
-	: noteHistories(noteHistories)
-	, channelHistories(channelHistories) {
+PianoKeys::PianoKeys(std::vector<std::array<ChannelState, 16>> & channels)
+	: channels(channels) {
 	};
 
 void PianoKeys::setup() {
@@ -20,12 +17,11 @@ void PianoKeys::draw(int64_t currentTime, bool reverseMode, int64_t dispatchOffs
 		for (auto & key : keys) {
 			key.draw();
 		}
-		for (int t = 0; t < (int)noteHistories.size(); ++t) {
+		for (int t = 0; t < (int)channels.size(); ++t) {
 			for (int c = 0; c < 16; ++c) {
-				auto & historyVector = noteHistories[t][c];
-				auto & events = channelHistories[t][c];
-				for (const auto & history : historyVector) {
-					keys[history.pitch].drawHistory(currentTime, t, c, history, events, reverseMode, dispatchOffset, removeOffset);
+				auto & channel = channels[t][c];
+				for (const auto & history : channel.noteHistories) {
+					keys[history.pitch].drawHistory(currentTime, t, c, history, channel.channelHistories, reverseMode, dispatchOffset, removeOffset);
 				}
 			}
 		}

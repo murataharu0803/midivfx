@@ -7,6 +7,7 @@
 
 #include "PianoKeys.h"
 #include "midiUtil.h"
+#include "ChannelState.h"
 
 using namespace std;
 
@@ -45,14 +46,11 @@ public:
 
 	// MIDI
 	ofxMidiIn midiIn;
-	// [track][channel(0-based)][pitch] — track count set at setup; 16 channels fixed by MIDI spec
-	vector<array<array<keyStatus_t, 128>, 16>> keyStatuses;
-	vector<array<deque<noteHistory_t>, 16>> noteHistories;
-	vector<array<deque<channelHistory_t>, 16>> channelHistories;
-	vector<array<bool, 16>> pedalDown;
+	// [track][channel(0-based)] — track count set at setup; 16 channels fixed by MIDI spec
+	vector<array<ChannelState, 16>> channels;
 
 	// visual objects
-	PianoKeys pianoKeys = PianoKeys(noteHistories, channelHistories);
+	PianoKeys pianoKeys = PianoKeys(channels);
 
 	// MIDI file playback
 	static constexpr bool useMidiFile = true;
