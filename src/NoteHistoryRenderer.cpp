@@ -3,17 +3,12 @@
 
 #include "NoteHistoryRenderer.h"
 
-static const float speed = .001f;
-
-static const ofColor BASE_COLOR(255, 64, 0);
-static const ofColor PEDAL_COLOR(128, 128, 128);
-
 // --- Ctx ---
 
 float NoteHistoryRenderer::Ctx::toY(int64_t t) const {
-	return reverseMode
-		? (float)(t - currentTime) * speed
-		: (float)(currentTime - t) * speed;
+	return config->reverseMode
+		? (float)(t - currentTime) * config->speed
+		: (float)(currentTime - t) * config->speed;
 }
 
 // --- Public entry point ---
@@ -26,22 +21,19 @@ void NoteHistoryRenderer::draw(
 	float width,
 	const noteHistory_t & history,
 	const std::deque<channelHistory_t> & events,
-	bool reverseMode,
-	int64_t dispatchOffset,
-	int64_t removeOffset,
-	NoteRenderMode mode) {
+	const VisualizerConfig & config) {
 
 	Ctx ctx;
 	ctx.x1 = posX - width / 2;
 	ctx.x2 = posX + width / 2;
-	ctx.tStart = std::max(history.onTime, currentTime - removeOffset);
-	ctx.tFinal = std::min(history.offTime, currentTime + dispatchOffset);
-	ctx.tPedalFinal = std::min(history.pedalOffTime, currentTime + dispatchOffset);
+	ctx.tStart = std::max(history.onTime, currentTime - config.removeOffset);
+	ctx.tFinal = std::min(history.offTime, currentTime + config.dispatchOffset);
+	ctx.tPedalFinal = std::min(history.pedalOffTime, currentTime + config.dispatchOffset);
 	ctx.velocityRatio = std::pow(history.velocity / 127.f, 0.5f);
 	ctx.currentTime = currentTime;
-	ctx.reverseMode = reverseMode;
+	ctx.config = &config;
 
-	switch (mode) {
+	switch (config.renderMode) {
 		case NoteRenderMode::CC:    drawCC(ctx, events); break;
 		case NoteRenderMode::Decay: drawDecay(ctx); break;
 		default:                    drawDefault(ctx); break;
@@ -83,7 +75,7 @@ void NoteHistoryRenderer::drawCC(const Ctx & ctx, const std::deque<channelHistor
 		bool advance = nextEvent != events.end() && ctx.tFinal >= nextCcTime;
 
 		const float ratio = ccValue / 127.f;
-		ofColor color = BASE_COLOR;
+		ofColor color = ctx.config->noteColor;
 		color.a = 255 * ratio;
 		drawQuad(ctx.x1, ctx.x2, ctx.toY(tStart), ctx.toY(tEnd), z, color, color);
 
@@ -97,16 +89,15 @@ void NoteHistoryRenderer::drawCC(const Ctx & ctx, const std::deque<channelHistor
 		}
 	}
 
-	// Pedal phase (same z as note in CC mode)
-	tStart = std::max(ctx.tFinal, ctx.currentTime - (ctx.currentTime - ctx.tStart)); // reset
-	tStart = std::max(ctx.tFinal, ctx.tStart); // simpler: restart from note end
+	// Pedal phase
+	tStart = std::max(ctx.tFinal, ctx.tStart);
 	while (tStart < ctx.tPedalFinal) {
 		int64_t nextCcTime = nextEvent != events.end() ? nextEvent->timestamp : 0;
 		int64_t tEnd = nextCcTime ? std::min(nextCcTime, ctx.tPedalFinal) : ctx.tPedalFinal;
 		bool advance = nextEvent != events.end() && ctx.tPedalFinal >= nextCcTime;
 
 		const float ratio = ccValue / 127.f;
-		ofColor color = PEDAL_COLOR;
+		ofColor color = ctx.config->pedalColor;
 		color.a = 255 * ratio;
 		drawQuad(ctx.x1, ctx.x2, ctx.toY(tStart), ctx.toY(tEnd), z, color, color);
 
@@ -122,21 +113,21 @@ void NoteHistoryRenderer::drawCC(const Ctx & ctx, const std::deque<channelHistor
 }
 
 void NoteHistoryRenderer::drawDecay(const Ctx & ctx) {
-	const int64_t TIME_SEGMENT = 100000; // us
-	const float DECAY_RATE = 0.95f;
+	const int64_t seg = ctx.config->decayTimeSegment;
+	const float decayRate = ctx.config->decayRate;
 	const float z = 1.0f;
 	const float pedalZ = 0.0f;
 
 	// Note phase
-	for (int64_t t = ctx.tStart; t < ctx.tFinal; t += TIME_SEGMENT) {
-		int64_t tEnd = std::min(t + TIME_SEGMENT, ctx.tFinal);
+	for (int64_t t = ctx.tStart; t < ctx.tFinal; t += seg) {
+		int64_t tEnd = std::min(t + seg, ctx.tFinal);
 
-		const float bottomRatio = std::pow(DECAY_RATE, (float)(t - ctx.tStart) / TIME_SEGMENT);
-		const float topRatio = std::pow(DECAY_RATE, (float)(tEnd - ctx.tStart) / TIME_SEGMENT);
+		const float bottomRatio = std::pow(decayRate, (float)(t - ctx.tStart) / seg);
+		const float topRatio = std::pow(decayRate, (float)(tEnd - ctx.tStart) / seg);
 
-		ofColor bottomColor = BASE_COLOR;
+		ofColor bottomColor = ctx.config->noteColor;
 		bottomColor.a = 255 * bottomRatio * ctx.velocityRatio;
-		ofColor topColor = BASE_COLOR;
+		ofColor topColor = ctx.config->noteColor;
 		topColor.a = 255 * topRatio * ctx.velocityRatio;
 
 		drawQuad(ctx.x1, ctx.x2, ctx.toY(t), ctx.toY(tEnd), z, bottomColor, topColor);
@@ -144,16 +135,16 @@ void NoteHistoryRenderer::drawDecay(const Ctx & ctx) {
 
 	// Pedal phase
 	int64_t pedalStart = std::max(ctx.tFinal, ctx.tStart);
-	for (int64_t t = pedalStart; t < ctx.tPedalFinal; t += TIME_SEGMENT) {
-		int64_t tEnd = std::min(t + TIME_SEGMENT, ctx.tPedalFinal);
+	for (int64_t t = pedalStart; t < ctx.tPedalFinal; t += seg) {
+		int64_t tEnd = std::min(t + seg, ctx.tPedalFinal);
 
 		// Decay continues from note-on time, not pedal start
-		const float bottomRatio = std::pow(DECAY_RATE, (float)(t - ctx.tStart) / TIME_SEGMENT);
-		const float topRatio = std::pow(DECAY_RATE, (float)(tEnd - ctx.tStart) / TIME_SEGMENT);
+		const float bottomRatio = std::pow(decayRate, (float)(t - ctx.tStart) / seg);
+		const float topRatio = std::pow(decayRate, (float)(tEnd - ctx.tStart) / seg);
 
-		ofColor bottomColor = PEDAL_COLOR;
+		ofColor bottomColor = ctx.config->pedalColor;
 		bottomColor.a = 255 * bottomRatio * ctx.velocityRatio;
-		ofColor topColor = PEDAL_COLOR;
+		ofColor topColor = ctx.config->pedalColor;
 		topColor.a = 255 * topRatio * ctx.velocityRatio;
 
 		drawQuad(ctx.x1, ctx.x2, ctx.toY(t), ctx.toY(tEnd), pedalZ, bottomColor, topColor);
@@ -168,12 +159,12 @@ void NoteHistoryRenderer::drawDefault(const Ctx & ctx) {
 	const float centerX = (ctx.x1 + ctx.x2) / 2;
 
 	ofPushStyle();
-	ofSetColor(BASE_COLOR);
+	ofSetColor(ctx.config->noteColor);
 	ofDrawBox(centerX, (top + bottom) / 2, 0, w, top - bottom, 1);
 	ofPopStyle();
 
 	ofPushStyle();
-	ofSetColor(PEDAL_COLOR);
+	ofSetColor(ctx.config->pedalColor);
 	ofDrawBox(centerX, (bottom + pedalBottom) / 2, 0, w, bottom - pedalBottom, 1);
 	ofPopStyle();
 }

@@ -4,6 +4,7 @@
 
 #include "midiUtil.h"
 #include "NoteHistoryRenderer.h"
+#include "VisualizerConfig.h"
 
 class PianoKey {
 public:
@@ -26,10 +27,7 @@ public:
 		uint8_t channel,
 		const noteHistory_t & history,
 		const std::deque<channelHistory_t> & events,
-		bool reverseMode,
-		int64_t dispatchOffset,
-		int64_t removeOffset,
-		NoteRenderMode mode = NoteRenderMode::Decay);
+		const VisualizerConfig & config);
 	void setActive(bool active);
 
 private:

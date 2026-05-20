@@ -1,8 +1,6 @@
 #include "ofApp.h"
 #include "PianoKey.h"
 
-const float speed = .001f;
-
 void ofApp::setup() {
 	ofSetFrameRate(60);
 	ofSetVerticalSync(true);
@@ -26,8 +24,8 @@ void ofApp::setup() {
 
 	pianoKeys.setup();
 
-	if (useMidiFile) {
-		auto loaded = MidiFileLoader::load(midiFilePath);
+	if (config.useMidiFile) {
+		auto loaded = MidiFileLoader::load(config.midiFilePath);
 		midiFileEvents = std::move(loaded.events);
 		beatEvents = std::move(loaded.beatEvents);
 		midiProcessor.initTracks(loaded.trackCount);
@@ -42,8 +40,8 @@ void ofApp::setup() {
 void ofApp::update() {
 	currentTime = ofGetElapsedTimeMicros() + playbackStartTime;
 
-	if (useMidiFile) {
-		int64_t lookaheadTime = currentTime + dispatchOffset;
+	if (config.useMidiFile) {
+		int64_t lookaheadTime = currentTime + config.dispatchOffset;
 		while (playbackHead < midiFileEvents.size() && midiFileEvents[playbackHead].timeUs <= lookaheadTime) {
 			auto & e = midiFileEvents[playbackHead++];
 			ofxMidiMessage msg;
@@ -76,7 +74,7 @@ void ofApp::update() {
 		for (auto & channel : trackChannels) {
 			auto & noteHistories = channel.noteHistories;
 			while (!noteHistories.empty()) {
-				if (noteHistories.front().pedalOffTime < currentTime - removeOffset) {
+				if (noteHistories.front().pedalOffTime < currentTime - config.removeOffset) {
 					noteHistories.pop_front();
 				} else {
 					break;
@@ -96,13 +94,13 @@ void ofApp::draw() {
 	// Draw beat lines
 	if (!beatEvents.empty()) {
 		const float totalWidth = PianoKey::getKeysWidth(0, 127);
-		const int64_t visibleStart = currentTime - removeOffset;
-		const int64_t visibleEnd = currentTime + dispatchOffset;
+		const int64_t visibleStart = currentTime - config.removeOffset;
+		const int64_t visibleEnd = currentTime + config.dispatchOffset;
 
 		auto toY = [&](int64_t t) -> float {
-			return reverseMode
-				? (float)(t - currentTime) * speed
-				: (float)(currentTime - t) * speed;
+			return config.reverseMode
+				? (float)(t - currentTime) * config.speed
+				: (float)(currentTime - t) * config.speed;
 		};
 
 		ofPushStyle();
@@ -119,7 +117,7 @@ void ofApp::draw() {
 		ofPopStyle();
 	}
 
-	pianoKeys.draw(currentTime, reverseMode, dispatchOffset, removeOffset);
+	pianoKeys.draw(currentTime, config);
 
 	// pointLight.disable();
 	directionalLight.disable();

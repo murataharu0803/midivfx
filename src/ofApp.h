@@ -6,6 +6,7 @@
 #include "MidiProcessor.h"
 #include "MidiFileLoader.h"
 #include "PianoKeys.h"
+#include "VisualizerConfig.h"
 #include "midiUtil.h"
 
 using namespace std;
@@ -50,12 +51,7 @@ public:
 	// visual objects
 	PianoKeys pianoKeys = PianoKeys(midiProcessor.channels);
 
-	// MIDI file playback
-	static constexpr bool useMidiFile = true;
-	static constexpr const char * midiFilePath = "song.mid"; // place in bin/data/
-	static constexpr int64_t dispatchOffset = 0; // how early before onTime to create history entry
-	static constexpr int64_t removeOffset = 5'000'000; // how long after offTime or PedalOffTime to keep entry
-	static constexpr bool reverseMode = false; // true = notes fall downward toward piano
+	VisualizerConfig config;
 
 	vector<MidiFileEvent> midiFileEvents;
 	vector<BeatEvent> beatEvents;

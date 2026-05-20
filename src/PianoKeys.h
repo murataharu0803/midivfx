@@ -4,13 +4,14 @@
 
 #include "PianoKey.h"
 #include "ChannelState.h"
+#include "VisualizerConfig.h"
 
 class PianoKeys {
 public:
 	PianoKeys(std::vector<std::array<ChannelState, 16>> & channels);
 
 	void setup();
-	void draw(int64_t currentTime, bool reverseMode, int64_t dispatchOffset, int64_t removeOffset);
+	void draw(int64_t currentTime, const VisualizerConfig & config);
 
 	std::vector<PianoKey> keys;
 

@@ -122,6 +122,9 @@
 		<ClInclude Include="src\ChannelState.h">
 			<Filter>src</Filter>
 		</ClInclude>
+		<ClInclude Include="src\VisualizerConfig.h">
+			<Filter>src</Filter>
+		</ClInclude>
 		<ClInclude Include="src\MidiFileLoader.h">
 			<Filter>src</Filter>
 		</ClInclude>

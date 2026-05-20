@@ -168,10 +168,7 @@ void PianoKey::drawHistory(
 	uint8_t channel,
 	const noteHistory_t & history,
 	const std::deque<channelHistory_t> & events,
-	bool reverseMode,
-	int64_t dispatchOffset,
-	int64_t removeOffset,
-	NoteRenderMode mode) {
+	const VisualizerConfig & config) {
 
 	int noteInOctave = noteNumber % 12;
 
@@ -190,7 +187,7 @@ void PianoKey::drawHistory(
 		: KEY_ROOT_WIDTHS[noteInOctave];
 
 	NoteHistoryRenderer::draw(currentTime, track, channel, finalPosX, w,
-		history, events, reverseMode, dispatchOffset, removeOffset, mode);
+		history, events, config);
 }
 
 void PianoKey::setActive(bool active) {

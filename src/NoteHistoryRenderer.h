@@ -3,8 +3,7 @@
 #include <deque>
 #include "ofMain.h"
 #include "midiUtil.h"
-
-enum class NoteRenderMode { Default, Decay, CC };
+#include "VisualizerConfig.h"
 
 class NoteHistoryRenderer {
 public:
@@ -16,10 +15,7 @@ public:
 		float width,
 		const noteHistory_t & history,
 		const std::deque<channelHistory_t> & events,
-		bool reverseMode,
-		int64_t dispatchOffset,
-		int64_t removeOffset,
-		NoteRenderMode mode = NoteRenderMode::Decay);
+		const VisualizerConfig & config);
 
 private:
 	// Shared context precomputed once per note, used by all render modes
@@ -28,7 +24,7 @@ private:
 		int64_t tStart, tFinal, tPedalFinal;
 		float velocityRatio;
 		int64_t currentTime;
-		bool reverseMode;
+		const VisualizerConfig * config;
 
 		float toY(int64_t t) const;
 	};

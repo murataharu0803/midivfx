@@ -264,6 +264,7 @@
 	</ItemGroup>
 	<ItemGroup>
 		<ClInclude Include="src\ChannelState.h" />
+		<ClInclude Include="src\VisualizerConfig.h" />
 		<ClInclude Include="src\MidiFileLoader.h" />
 		<ClInclude Include="src\MidiProcessor.h" />
 		<ClInclude Include="src\NoteHistoryRenderer.h" />
