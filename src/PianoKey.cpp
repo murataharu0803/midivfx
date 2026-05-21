@@ -77,9 +77,6 @@ const float NOTE_CENTER_OFFSETS[12] = {
 	157.5 * SCALE,
 };
 
-const std::array<percussionMapping_t, 1> percussionMappings = {
-	{ 0, 36, 24, 36, false }, // map C2 to all C notes in percussion channel
-};
 
 PianoKey::PianoKey(uint8_t note)
 	: noteNumber(note)
@@ -174,15 +171,15 @@ void PianoKey::drawHistory(
 
 	// Resolve percussion mapping to determine display position and width
 	auto mapping = std::find_if(
-		percussionMappings.begin(),
-		percussionMappings.end(),
+		config.percussionMappings.begin(),
+		config.percussionMappings.end(),
 		[&](const percussionMapping_t & m) {
 			return m.track == track && m.channel == channel && noteNumber == m.pitch;
 		});
-	const float finalPosX = mapping != percussionMappings.end()
+	const float finalPosX = mapping != config.percussionMappings.end()
 		? (calculatePosition(mapping->mapEndPitch + 1) + calculatePosition(mapping->mapStartPitch)) / 2
 		: rootPosX;
-	const float w = mapping != percussionMappings.end()
+	const float w = mapping != config.percussionMappings.end()
 		? calculatePosition(mapping->mapEndPitch + 1) - calculatePosition(mapping->mapStartPitch)
 		: KEY_ROOT_WIDTHS[noteInOctave];
 

@@ -11,6 +11,30 @@ void MidiProcessor::initTracks(int count) {
 	channels.resize(count);
 }
 
+std::array<bool, 128> MidiProcessor::getActiveKeys() const {
+	std::array<bool, 128> active{};
+	for (const auto & trackChannels : channels) {
+		for (const auto & ch : trackChannels) {
+			for (int i = 0; i < 128; ++i) {
+				if (ch.keyStatuses[i].isOn) active[i] = true;
+			}
+		}
+	}
+	return active;
+}
+
+void MidiProcessor::trimHistory(int64_t currentTime, int64_t removeOffset) {
+	for (auto & trackChannels : channels) {
+		for (auto & ch : trackChannels) {
+			auto & noteHistories = ch.noteHistories;
+			while (!noteHistories.empty() &&
+				noteHistories.front().pedalOffTime < currentTime - removeOffset) {
+				noteHistories.pop_front();
+			}
+		}
+	}
+}
+
 void MidiProcessor::processMidiMessage(ofxMidiMessage & event, uint8_t track, int64_t timestamp) {
 	if (track >= channels.size()) {
 		ofLogWarning() << "processMidiMessage: track " << track << " out of range";

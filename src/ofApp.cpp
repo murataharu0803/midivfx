@@ -7,8 +7,8 @@ void ofApp::setup() {
 	ofBackground(20);
 
 	// Setup camera
-	camera.setPosition(0, 500, 1800); // Initial position
-	camera.setTarget(ofVec3f(0, 500, 0)); // Look at origin
+	camera.setPosition(config.cameraX, config.cameraY, config.cameraZ);
+	camera.setTarget(ofVec3f(0, config.cameraTargetY, 0));
 
 	// Setup lighting
 	ofEnableLighting();
@@ -32,7 +32,7 @@ void ofApp::setup() {
 	} else {
 		midiProcessor.initTracks(1); // one track per port; extend here for multi-port
 		midiIn.listInPorts();
-		midiIn.openPort(1);
+		midiIn.openPort(config.midiInPort);
 		midiIn.addListener(this);
 	}
 }
@@ -54,34 +54,13 @@ void ofApp::update() {
 		}
 	}
 
-	// Update piano key active state — any track/channel activates the key
+	// Update piano key active state
+	auto activeKeys = midiProcessor.getActiveKeys();
 	for (int i = 0; i < 128; ++i) {
-		bool active = false;
-		for (auto & trackChannels : midiProcessor.channels) {
-			for (auto & channel : trackChannels) {
-				if (channel.keyStatuses[i].isOn) {
-					active = true;
-					break;
-				}
-			}
-			if (active) break;
-		}
-		pianoKeys.keys[i].setActive(active);
+		pianoKeys.keys[i].setActive(activeKeys[i]);
 	}
 
-	// Remove old note history entries (past removeOffset after pedalOffTime)
-	for (auto & trackChannels : midiProcessor.channels) {
-		for (auto & channel : trackChannels) {
-			auto & noteHistories = channel.noteHistories;
-			while (!noteHistories.empty()) {
-				if (noteHistories.front().pedalOffTime < currentTime - config.removeOffset) {
-					noteHistories.pop_front();
-				} else {
-					break;
-				}
-			}
-		}
-	}
+	midiProcessor.trimHistory(currentTime, config.removeOffset);
 }
 
 void ofApp::draw() {

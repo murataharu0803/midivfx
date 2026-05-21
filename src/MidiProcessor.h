@@ -13,4 +13,10 @@ public:
 
 	void initTracks(int count);
 	void processMidiMessage(ofxMidiMessage & event, uint8_t track, int64_t timestamp);
+
+	// Returns a 128-element array: true if pitch is active on any track/channel
+	std::array<bool, 128> getActiveKeys() const;
+
+	// Removes note history entries older than (currentTime - removeOffset)
+	void trimHistory(int64_t currentTime, int64_t removeOffset);
 };
