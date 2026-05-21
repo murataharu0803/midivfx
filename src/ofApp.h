@@ -3,8 +3,8 @@
 #include "ofMain.h"
 #include "ofxMidi.h"
 
-#include "MidiProcessor.h"
 #include "MidiFileLoader.h"
+#include "MidiProcessor.h"
 #include "PianoKeys.h"
 #include "VisualizerConfig.h"
 #include "midiUtil.h"
@@ -49,7 +49,7 @@ public:
 	MidiProcessor midiProcessor;
 
 	// visual objects
-	PianoKeys pianoKeys = PianoKeys(midiProcessor.channels);
+	PianoKeys pianoKeys = PianoKeys(midiProcessor.channels, beatEvents);
 
 	VisualizerConfig config;
 

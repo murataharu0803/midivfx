@@ -1,25 +1,29 @@
 #pragma once
 
+#include "midiUtil.h"
+#include "ofColor.h"
 #include <string>
 #include <vector>
-#include "ofColor.h"
-#include "midiUtil.h"
 
-enum class NoteRenderMode { Default, Decay, CC };
+enum class NoteRenderMode { Default,
+	Decay,
+	CC };
 
 struct VisualizerConfig {
 	// Playback source
 	bool useMidiFile = true;
 	std::string midiFilePath = "song.mid"; // place in bin/data/
-	int midiInPort = 1;                   // live MIDI input port index
+	int midiInPort = 1; // live MIDI input port index
 
 	// Timing
-	int64_t dispatchOffset = 0;           // how early before onTime to dispatch events
-	int64_t removeOffset = 5'000'000;     // how long after pedalOffTime to keep history (us)
+	int64_t dispatchOffset = 0; // how early before onTime to dispatch events
+	int64_t removeOffset = 5'000'000; // how long after pedalOffTime to keep history (us)
 
 	// Display
-	bool reverseMode = false;             // true = notes fall toward piano
-	float speed = 0.001f;                 // pixels per microsecond
+	bool showPiano = false;
+	bool isAverageWidth = true;
+	bool reverseMode = false; // true = notes fall toward piano
+	float speed = 0.001f; // pixels per microsecond
 	NoteRenderMode renderMode = NoteRenderMode::Decay;
 
 	// Colors
@@ -27,14 +31,14 @@ struct VisualizerConfig {
 	ofColor pedalColor = ofColor(128, 128, 128);
 
 	// Decay mode
-	float decayRate = 0.95f;              // alpha multiplier per decayTimeSegment
-	int64_t decayTimeSegment = 100'000;   // segment length for decay steps (us)
+	float decayRate = 0.95f; // alpha multiplier per decayTimeSegment
+	int64_t decayTimeSegment = 100'000; // segment length for decay steps (us)
 
 	// Camera
 	float cameraX = 0.f;
 	float cameraY = 500.f;
 	float cameraZ = 1800.f;
-	float cameraTargetY = 500.f;          // camera looks at (0, cameraTargetY, 0)
+	float cameraTargetY = 500.f; // camera looks at (0, cameraTargetY, 0)
 
 	// Percussion mappings
 	std::vector<percussionMapping_t> percussionMappings = {

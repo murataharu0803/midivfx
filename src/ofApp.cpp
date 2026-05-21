@@ -22,7 +22,7 @@ void ofApp::setup() {
 	directionalLight.setSpecularColor(ofColor(255, 255, 255));
 	directionalLight.lookAt(ofVec3f(0, 0, 0));
 
-	pianoKeys.setup();
+	pianoKeys.setup(config);
 
 	if (config.useMidiFile) {
 		auto loaded = MidiFileLoader::load(config.midiFilePath);
@@ -69,32 +69,6 @@ void ofApp::draw() {
 
 	directionalLight.enable();
 	// pointLight.enable();
-
-	// Draw beat lines
-	if (!beatEvents.empty()) {
-		const float totalWidth = PianoKey::getKeysWidth(0, 127);
-		const int64_t visibleStart = currentTime - config.removeOffset;
-		const int64_t visibleEnd = currentTime + config.dispatchOffset;
-
-		auto toY = [&](int64_t t) -> float {
-			return config.reverseMode
-				? (float)(t - currentTime) * config.speed
-				: (float)(currentTime - t) * config.speed;
-		};
-
-		ofPushStyle();
-		ofDisableLighting();
-		for (const auto & beatEvent : beatEvents) {
-			if (beatEvent.timeUs < visibleStart || beatEvent.timeUs > visibleEnd) continue;
-			float y = toY(beatEvent.timeUs);
-			bool isDownbeat = (beatEvent.beatInBar == 0.0f);
-			ofSetColor(isDownbeat ? ofColor(255, 255, 255, 140) : ofColor(255, 255, 255, 40));
-			ofSetLineWidth(isDownbeat ? 2.0f : 1.0f);
-			ofDrawLine(-totalWidth / 2, y, 0, totalWidth / 2, y, 0);
-		}
-		ofEnableLighting();
-		ofPopStyle();
-	}
 
 	pianoKeys.draw(currentTime, config);
 

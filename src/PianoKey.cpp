@@ -77,15 +77,18 @@ const float NOTE_CENTER_OFFSETS[12] = {
 	157.5 * SCALE,
 };
 
-
-PianoKey::PianoKey(uint8_t note)
+PianoKey::PianoKey(uint8_t note, const VisualizerConfig & config)
 	: noteNumber(note)
 	, isActive(false) {
+
 	int noteInOctave = note % 12;
 	isBlackKey = BLACK_KEY_PATTERN[noteInOctave];
+	bool isAverageWidth = config.isAverageWidth;
 
 	posX = calculatePosition(noteNumber);
-	rootPosX = calculateRootCenter(noteNumber);
+	rootPosX = isAverageWidth
+		? (note + 0.5f) * OCTAVE_WIDTH / 12
+		: calculateRootCenter(noteNumber);
 	width = calculateWidth(noteNumber);
 	height = calculateHeight(noteNumber);
 

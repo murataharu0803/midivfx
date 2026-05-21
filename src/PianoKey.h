@@ -2,9 +2,10 @@
 
 #include "ofMain.h"
 
-#include "midiUtil.h"
 #include "NoteHistoryRenderer.h"
 #include "VisualizerConfig.h"
+#include "midiUtil.h"
+
 
 class PianoKey {
 public:
@@ -18,7 +19,7 @@ public:
 	float width, height;
 	ofColor color;
 
-	PianoKey(uint8_t note);
+	PianoKey(uint8_t note, const VisualizerConfig & config);
 
 	void draw();
 	void drawHistory(
