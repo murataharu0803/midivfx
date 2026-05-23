@@ -40,10 +40,16 @@ void ofApp::setup() {
 		midiIn.openPort(config.midiInPort);
 		midiIn.addListener(this);
 	}
+
+	exporter.setup(ofGetWidth(), ofGetHeight(), config, midiFileEvents);
 }
 
 void ofApp::update() {
-	currentTime = ofGetElapsedTimeMicros() + playbackStartTime;
+	if (exporter.isActive()) {
+		currentTime = exporter.advanceAndGetElapsedUs() + playbackStartTime;
+	} else {
+		currentTime = ofGetElapsedTimeMicros() + playbackStartTime;
+	}
 
 	if (config.useMidiFile) {
 		int64_t lookaheadTime = currentTime + config.dispatchOffset;
@@ -69,6 +75,8 @@ void ofApp::update() {
 }
 
 void ofApp::draw() {
+	if (exporter.isActive()) exporter.begin();
+
 	camera.begin();
 	ofEnableDepthTest();
 
@@ -84,9 +92,13 @@ void ofApp::draw() {
 	camera.end();
 
 	// 2D UI on top
-	ofSetColor(255);
-	ofDrawBitmapString("FPS: " + ofToString(ofGetFrameRate(), 0), 20, 20);
-	ofDrawBitmapString("Mouse drag to rotate, scroll to zoom", 20, 40);
+	if (!exporter.isActive()) {
+		ofSetColor(255);
+		ofDrawBitmapString("FPS: " + ofToString(ofGetFrameRate(), 0), 20, 20);
+		ofDrawBitmapString("Mouse drag to rotate, scroll to zoom", 20, 40);
+	}
+
+	if (exporter.isActive()) exporter.end();
 }
 
 void ofApp::newMidiMessage(ofxMidiMessage & event) {

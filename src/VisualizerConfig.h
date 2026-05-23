@@ -28,8 +28,8 @@ struct VisualizerConfig {
 	NoteRenderMode renderMode = NoteRenderMode::Decay;
 
 	// Colors
-	ofColor noteColor = ofColor(255, 64, 0);
-	ofColor pedalColor = ofColor(128, 128, 128);
+	ofColor noteColor = ofColor(255, 160, 0);
+	ofColor pedalColor = ofColor(160, 160, 160);
 
 	// Decay mode
 	float decayRate = 0.95f; // alpha multiplier per decayTimeSegment
@@ -46,4 +46,10 @@ struct VisualizerConfig {
 	std::vector<percussionMapping_t> percussionMappings = {
 		{ 0, 9, 36, 24, 36, false }, // map MIDI ch10 (0-based: 9) C2 across C notes
 	};
+
+	// Export
+	bool exportMode = false;
+	std::string exportOutputPath = "output.mp4";
+	int exportFps = 60;
+	int64_t exportEndPaddingUs = 3'000'000; // extra time after last note (us)
 };

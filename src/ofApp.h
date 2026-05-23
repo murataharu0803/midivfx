@@ -7,6 +7,7 @@
 #include "MidiProcessor.h"
 #include "PianoKeys.h"
 #include "VisualizerConfig.h"
+#include "VideoExporter.h"
 #include "midiUtil.h"
 
 using namespace std;
@@ -43,6 +44,8 @@ public:
 
 	// time
 	int64_t currentTime = 0;
+
+	VideoExporter exporter;
 
 	// MIDI
 	ofxMidiIn midiIn;

@@ -233,6 +233,7 @@
 		<ClCompile Include="src\ofApp.cpp" />
 		<ClCompile Include="src\PianoKey.cpp" />
 		<ClCompile Include="src\PianoKeys.cpp" />
+		<ClCompile Include="src\VideoExporter.cpp" />
 		<ClCompile Include="..\..\..\addons\ofxBloom\src\ofxBlur.cpp" />
 		<ClCompile Include="..\..\..\addons\ofxGui\src\ofxBaseGui.cpp" />
 		<ClCompile Include="..\..\..\addons\ofxGui\src\ofxButton.cpp" />
@@ -264,6 +265,7 @@
 	</ItemGroup>
 	<ItemGroup>
 		<ClInclude Include="src\ChannelState.h" />
+		<ClInclude Include="src\VideoExporter.h" />
 		<ClInclude Include="src\VisualizerConfig.h" />
 		<ClInclude Include="src\MidiFileLoader.h" />
 		<ClInclude Include="src\MidiProcessor.h" />
