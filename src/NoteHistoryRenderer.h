@@ -17,6 +17,7 @@ public:
 		const noteHistory_t & history,
 		const std::deque<channelHistory_t> & events,
 		const std::deque<channelHistory_t> & pedalEvents,
+		const Style & style,
 		const VisualizerConfig & config);
 
 private:
@@ -26,6 +27,7 @@ private:
 		int64_t tStart, tFinal, tPedalFinal;
 		float velocityRatio;
 		int64_t currentTime;
+		const Style * style;
 		const VisualizerConfig * config;
 		const std::deque<channelHistory_t> * pedalEvents;
 

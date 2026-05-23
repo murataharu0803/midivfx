@@ -1,5 +1,62 @@
 #include "PianoKeys.h"
 #include <algorithm>
+#include <regex>
+
+// ── Style resolution ──────────────────────────────────────────────────────────
+
+static Style applyOverride(Style base, const StyleOverride & over) {
+	if (over.note) base.note = *over.note;
+	if (over.pedal) base.pedal = *over.pedal;
+	base.remaps.insert(base.remaps.end(), over.remaps.begin(), over.remaps.end());
+	return base;
+}
+
+static bool trackMatches(const TrackConfig & tc, int track0, const std::vector<std::string> & trackNames) {
+	bool byNumber = false;
+	for (int t : tc.tracks) {
+		if (t - 1 == track0) {
+			byNumber = true;
+			break;
+		}
+	}
+	bool byRegex = false;
+	if (!tc.regex.empty() && track0 < (int)trackNames.size()) {
+		try {
+			std::regex re(tc.regex, std::regex_constants::icase);
+			byRegex = std::regex_search(trackNames[track0], re);
+		} catch (...) { }
+	}
+	if (tc.tracks.empty() && tc.regex.empty()) return false;
+	return byNumber || byRegex;
+}
+
+static Style resolveStyle(const VisualizerConfig & config,
+	const std::vector<std::string> & trackNames,
+	int track0, int channel0) {
+
+	Style result = config.style;
+
+	for (const auto & tc : config.tracks) {
+		if (!trackMatches(tc, track0, trackNames)) continue;
+		result = applyOverride(result, tc.style);
+
+		for (const auto & cc : tc.channels) {
+			bool chMatch = cc.channels.empty();
+			for (int c : cc.channels) {
+				if (c - 1 == channel0) {
+					chMatch = true;
+					break;
+				}
+			}
+			if (!chMatch) continue;
+			result = applyOverride(result, cc.style);
+		}
+	}
+
+	return result;
+}
+
+// ── PianoKeys ─────────────────────────────────────────────────────────────────
 
 PianoKeys::PianoKeys(std::vector<std::array<ChannelState, 16>> & channels, std::vector<BeatEvent> & beatEvents)
 	: channels(channels)
@@ -12,7 +69,7 @@ void PianoKeys::setup(const VisualizerConfig & config) {
 	}
 }
 
-void PianoKeys::draw(int64_t currentTime, const VisualizerConfig & config) {
+void PianoKeys::draw(int64_t currentTime, const VisualizerConfig & config, const std::vector<std::string> & trackNames) {
 	ofPushMatrix();
 	{
 		const float totalWidth = PianoKey::getKeysWidth(0, 127);
@@ -32,9 +89,9 @@ void PianoKeys::draw(int64_t currentTime, const VisualizerConfig & config) {
 			ofSetColor(ofColor(255, 255, 255, 140));
 			ofSetLineWidth(2.0f);
 			if (horizontal)
-				ofDrawLine(0, 0, 0, 0, totalWidth, 0); // vertical line at X=0
+				ofDrawLine(0, 0, 0, 0, totalWidth, 0);
 			else
-				ofDrawLine(0, 0, 0, totalWidth, 0, 0); // horizontal line at Y=0
+				ofDrawLine(0, 0, 0, totalWidth, 0, 0);
 		}
 
 		// Draw beat lines
@@ -70,8 +127,10 @@ void PianoKeys::draw(int64_t currentTime, const VisualizerConfig & config) {
 			for (int c = 0; c < 16; ++c) {
 				auto & channel = channels[t][c];
 
-				// Resolve pedal event source (0 = use note's own track/channel)
-				const auto & pedal = config.style.pedal;
+				Style style = resolveStyle(config, trackNames, t, c);
+
+				// Resolve pedal event source from the resolved style
+				const auto & pedal = style.pedal;
 				int pedalTrack = (pedal.track > 0) ? pedal.track - 1 : t;
 				int pedalCh = (pedal.channel > 0) ? pedal.channel - 1 : c;
 				pedalTrack = std::min(pedalTrack, (int)channels.size() - 1);
@@ -80,7 +139,7 @@ void PianoKeys::draw(int64_t currentTime, const VisualizerConfig & config) {
 
 				for (const auto & history : channel.noteHistories) {
 					keys[history.pitch].drawHistory(currentTime, t, c, history,
-						channel.channelHistories, pedalEvents, config);
+						channel.channelHistories, pedalEvents, style, config);
 				}
 			}
 		}

@@ -11,7 +11,7 @@ public:
 	PianoKeys(std::vector<std::array<ChannelState, 16>> & channels, std::vector<BeatEvent> & beatEvents);
 
 	void setup(const VisualizerConfig & config);
-	void draw(int64_t currentTime, const VisualizerConfig & config);
+	void draw(int64_t currentTime, const VisualizerConfig & config, const std::vector<std::string> & trackNames);
 
 	std::vector<PianoKey> keys;
 

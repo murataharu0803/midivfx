@@ -29,6 +29,7 @@ public:
 		const noteHistory_t & history,
 		const std::deque<channelHistory_t> & events,
 		const std::deque<channelHistory_t> & pedalEvents,
+		const Style & style,
 		const VisualizerConfig & config);
 	void setActive(bool active);
 

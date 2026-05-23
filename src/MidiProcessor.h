@@ -3,12 +3,12 @@
 #include <array>
 #include <vector>
 
-#include "ofxMidi.h"
 #include "ChannelState.h"
+#include "ofxMidi.h"
 
 class MidiProcessor {
 public:
-	// [track][channel(0-based)] — track count set at initTracks; 16 channels fixed by MIDI spec
+	// [track][channel] — track count set at initTracks; 16 channels fixed by MIDI spec
 	std::vector<std::array<ChannelState, 16>> channels;
 
 	void initTracks(int count);

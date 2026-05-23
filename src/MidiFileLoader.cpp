@@ -95,6 +95,18 @@ MidiLoadResult MidiFileLoader::load(const std::string & path) {
 	std::sort(result.events.begin(), result.events.end(),
 		[](const MidiFileEvent & a, const MidiFileEvent & b) { return a.timeUs < b.timeUs; });
 
+	// Extract track names from meta type 0x03 (Sequence/Track Name)
+	result.trackNames.resize(trackCount);
+	for (int t = 0; t < trackCount; ++t) {
+		for (int i = 0; i < smf[t].size(); ++i) {
+			smf::MidiEvent & ev = smf[t][i];
+			if (ev.isMetaMessage() && ev[1] == 0x03 && ev.size() > 2) {
+				result.trackNames[t] = std::string(ev.begin() + 2, ev.end());
+				break; // take first occurrence
+			}
+		}
+	}
+
 	result.trackCount = trackCount;
 	return result;
 }

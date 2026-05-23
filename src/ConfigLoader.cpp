@@ -114,6 +114,43 @@ static Style parseStyle(const YAML::Node & node) {
 	return s;
 }
 
+// Like parseStyle but only sets fields that are explicitly present (for track/channel overrides)
+static StyleOverride parseStyleOverride(const YAML::Node & node) {
+	StyleOverride s;
+	if (!node || !node.IsMap()) return s;
+
+	if (node["note"] && node["note"].IsMap()) {
+		NoteStyle n;
+		const auto & nn = node["note"];
+		if (nn["mode"]) n.mode = parseNoteMode(nn["mode"].as<std::string>(), n.ccNumber);
+		if (nn["velocity"]) n.velocity = nn["velocity"].as<bool>();
+		if (nn["color"]) n.color = parseHexColor(nn["color"].as<std::string>());
+		if (nn["decay"]) {
+			const auto & d = nn["decay"];
+			if (d["rate"]) n.decay.rate = d["rate"].as<float>();
+			if (d["timeSegment"]) n.decay.timeSegment = d["timeSegment"].as<int64_t>();
+		}
+		s.note = n;
+	}
+
+	if (node["pedal"] && node["pedal"].IsMap()) {
+		PedalStyle p;
+		const auto & pp = node["pedal"];
+		if (pp["show"]) p.show = pp["show"].as<bool>();
+		if (pp["color"]) p.color = parseHexColor(pp["color"].as<std::string>());
+		if (pp["track"]) p.track = pp["track"].as<int>();
+		if (pp["channel"]) p.channel = pp["channel"].as<int>();
+		s.pedal = p;
+	}
+
+	if (node["remaps"] && node["remaps"].IsSequence()) {
+		for (const auto & item : node["remaps"])
+			s.remaps.push_back(parseRemapEntry(item));
+	}
+
+	return s;
+}
+
 // ── Loader ────────────────────────────────────────────────────────────────────
 
 VisualizerConfig ConfigLoader::load(const std::string & path) {
@@ -183,13 +220,13 @@ VisualizerConfig ConfigLoader::load(const std::string & path) {
 				TrackConfig tc;
 				if (tNode["track"]) tc.tracks = parseRanges(tNode["track"].as<std::string>());
 				if (tNode["regex"]) tc.regex = tNode["regex"].as<std::string>();
-				if (tNode["style"]) tc.style = parseStyle(tNode["style"]);
+				if (tNode["style"]) tc.style = parseStyleOverride(tNode["style"]);
 
 				if (tNode["channels"] && tNode["channels"].IsSequence()) {
 					for (const auto & cNode : tNode["channels"]) {
 						ChannelConfig cc;
 						if (cNode["channel"]) cc.channels = parseRanges(cNode["channel"].as<std::string>());
-						if (cNode["style"]) cc.style = parseStyle(cNode["style"]);
+						if (cNode["style"]) cc.style = parseStyleOverride(cNode["style"]);
 						tc.channels.push_back(std::move(cc));
 					}
 				}

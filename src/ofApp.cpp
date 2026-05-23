@@ -37,6 +37,7 @@ void ofApp::setup() {
 		auto loaded = MidiFileLoader::load(midiPath);
 		midiFileEvents = std::move(loaded.events);
 		beatEvents = std::move(loaded.beatEvents);
+		trackNames = std::move(loaded.trackNames);
 		midiProcessor.initTracks(loaded.trackCount);
 	} else {
 		midiProcessor.initTracks(1); // one track per port; extend here for multi-port
@@ -88,7 +89,7 @@ void ofApp::draw() {
 	directionalLight.enable();
 	// pointLight.enable();
 
-	pianoKeys.draw(currentTime, config);
+	pianoKeys.draw(currentTime, config, trackNames);
 
 	// pointLight.disable();
 	directionalLight.disable();

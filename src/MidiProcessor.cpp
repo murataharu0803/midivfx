@@ -36,15 +36,14 @@ void MidiProcessor::trimHistory(int64_t currentTime, int64_t removeOffset) {
 
 void MidiProcessor::processMidiMessage(ofxMidiMessage & event, uint8_t track, int64_t timestamp) {
 	if (track >= channels.size()) {
-		ofLogWarning() << "processMidiMessage: track " << track << " out of range";
+		ofLogWarning() << "processMidiMessage: track " << (int)track + 1 << " out of range";
 		return;
 	}
 
-	ofLogNotice() << event.toString();
+	ofLogNotice() << "Track " << (int)track + 1 << ": " << event.toString();
 
-	const uint8_t ch = event.channel - 1; // convert to 0-based
 	MidiStatus status = event.status;
-	ChannelState & channelState = channels[track][ch];
+	ChannelState & channelState = channels[track][event.channel - 1];
 
 	// channel history
 	auto & channelHistories = channelState.channelHistories;

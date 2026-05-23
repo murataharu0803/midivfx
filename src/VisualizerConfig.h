@@ -56,17 +56,26 @@ struct Style {
 	std::vector<RemapEntry> remaps;
 };
 
+// Partial style used in track/channel overrides.
+// Only sections that are explicitly present in the YAML are set.
+// Remaps are always accumulated (combined with parent).
+struct StyleOverride {
+	std::optional<NoteStyle> note;
+	std::optional<PedalStyle> pedal;
+	std::vector<RemapEntry> remaps;
+};
+
 // ── Per-track / per-channel overrides ────────────────────────────────────────
 
 struct ChannelConfig {
-	std::vector<int> channels; // 1-based, resolved from range string
-	Style style;
+	std::vector<int> channels; // 1-based
+	StyleOverride style;
 };
 
 struct TrackConfig {
-	std::vector<int> tracks; // 1-based; empty = apply to all (or match by regex)
+	std::vector<int> tracks; // 1-based
 	std::string regex;
-	Style style;
+	StyleOverride style;
 	std::vector<ChannelConfig> channels;
 };
 

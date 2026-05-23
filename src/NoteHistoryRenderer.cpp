@@ -22,6 +22,7 @@ void NoteHistoryRenderer::draw(
 	const noteHistory_t & history,
 	const std::deque<channelHistory_t> & events,
 	const std::deque<channelHistory_t> & pedalEvents,
+	const Style & style,
 	const VisualizerConfig & config) {
 
 	Ctx ctx;
@@ -30,14 +31,15 @@ void NoteHistoryRenderer::draw(
 	ctx.tStart = std::max(history.onTime, currentTime - config.timing.removeOffset);
 	ctx.tFinal = std::min(history.offTime, currentTime + config.timing.dispatchOffset);
 	ctx.tPedalFinal = std::min(history.pedalOffTime, currentTime + config.timing.dispatchOffset);
-	ctx.velocityRatio = config.style.note.velocity
+	ctx.velocityRatio = style.note.velocity
 		? std::pow(history.velocity / 127.f, 0.5f)
 		: 1.0f;
 	ctx.currentTime = currentTime;
+	ctx.style = &style;
 	ctx.config = &config;
 	ctx.pedalEvents = &pedalEvents;
 
-	switch (config.style.note.mode) {
+	switch (style.note.mode) {
 	case NoteRenderMode::CC:
 		drawCC(ctx, events);
 		break;
@@ -52,14 +54,13 @@ void NoteHistoryRenderer::draw(
 
 // --- Render modes ---
 
-// Shared helper: renders one CC-driven phase (note or pedal) using the given events source.
 void NoteHistoryRenderer::drawCCPhase(
 	const Ctx & ctx,
 	const std::deque<channelHistory_t> & events,
 	int64_t tFrom, int64_t tTo,
 	const ofColor & baseColor, float z) {
 
-	const uint8_t CC_CONTROL = (uint8_t)ctx.config->style.note.ccNumber;
+	const uint8_t CC_CONTROL = (uint8_t)ctx.style->note.ccNumber;
 
 	auto advanceToCC = [&](std::deque<channelHistory_t>::const_iterator it) {
 		while (it != events.end() && !(it->status == MIDI_CONTROL_CHANGE && it->control == CC_CONTROL))
@@ -106,19 +107,17 @@ void NoteHistoryRenderer::drawCCPhase(
 }
 
 void NoteHistoryRenderer::drawCC(const Ctx & ctx, const std::deque<channelHistory_t> & events) {
-	// Note phase: uses note's own channel events
-	drawCCPhase(ctx, events, ctx.tStart, ctx.tFinal, ctx.config->style.note.color, 1.0f);
+	drawCCPhase(ctx, events, ctx.tStart, ctx.tFinal, ctx.style->note.color, 1.0f);
 
-	// Pedal phase: uses (potentially redirected) pedal channel events
-	if (ctx.config->style.pedal.show) {
+	if (ctx.style->pedal.show) {
 		int64_t pedalStart = std::max(ctx.tFinal, ctx.tStart);
-		drawCCPhase(ctx, *ctx.pedalEvents, pedalStart, ctx.tPedalFinal, ctx.config->style.pedal.color, 0.0f);
+		drawCCPhase(ctx, *ctx.pedalEvents, pedalStart, ctx.tPedalFinal, ctx.style->pedal.color, 0.0f);
 	}
 }
 
 void NoteHistoryRenderer::drawDecay(const Ctx & ctx) {
-	const int64_t seg = ctx.config->style.note.decay.timeSegment;
-	const float decayRate = ctx.config->style.note.decay.rate;
+	const int64_t seg = ctx.style->note.decay.timeSegment;
+	const float decayRate = ctx.style->note.decay.rate;
 	const float z = 1.0f;
 	const float pedalZ = 0.0f;
 
@@ -129,9 +128,9 @@ void NoteHistoryRenderer::drawDecay(const Ctx & ctx) {
 		const float bottomRatio = std::pow(decayRate, (float)(t - ctx.tStart) / seg);
 		const float topRatio = std::pow(decayRate, (float)(tEnd - ctx.tStart) / seg);
 
-		ofColor bottomColor = ctx.config->style.note.color;
+		ofColor bottomColor = ctx.style->note.color;
 		bottomColor.a = (uint8_t)(255 * bottomRatio * ctx.velocityRatio);
-		ofColor topColor = ctx.config->style.note.color;
+		ofColor topColor = ctx.style->note.color;
 		topColor.a = (uint8_t)(255 * topRatio * ctx.velocityRatio);
 
 		if (ctx.config->display.horizontal)
@@ -145,13 +144,12 @@ void NoteHistoryRenderer::drawDecay(const Ctx & ctx) {
 	for (int64_t t = pedalStart; t < ctx.tPedalFinal; t += seg) {
 		int64_t tEnd = std::min(t + seg, ctx.tPedalFinal);
 
-		// Decay continues from note-on time, not pedal start
 		const float bottomRatio = std::pow(decayRate, (float)(t - ctx.tStart) / seg);
 		const float topRatio = std::pow(decayRate, (float)(tEnd - ctx.tStart) / seg);
 
-		ofColor bottomColor = ctx.config->style.pedal.color;
+		ofColor bottomColor = ctx.style->pedal.color;
 		bottomColor.a = (uint8_t)(255 * bottomRatio * ctx.velocityRatio);
-		ofColor topColor = ctx.config->style.pedal.color;
+		ofColor topColor = ctx.style->pedal.color;
 		topColor.a = (uint8_t)(255 * topRatio * ctx.velocityRatio);
 
 		if (ctx.config->display.horizontal)
@@ -162,9 +160,9 @@ void NoteHistoryRenderer::drawDecay(const Ctx & ctx) {
 }
 
 void NoteHistoryRenderer::drawDefault(const Ctx & ctx) {
-	ofColor noteColor = ctx.config->style.note.color;
+	ofColor noteColor = ctx.style->note.color;
 	noteColor.a = (uint8_t)(noteColor.a * ctx.velocityRatio);
-	ofColor pedalColor = ctx.config->style.pedal.color;
+	ofColor pedalColor = ctx.style->pedal.color;
 
 	if (ctx.config->display.horizontal) {
 		const float xA = ctx.toScrollPos(ctx.tStart);
@@ -227,8 +225,6 @@ void NoteHistoryRenderer::drawQuad(float x1, float x2, float yBottom, float yTop
 	ofPopStyle();
 }
 
-// Horizontal mode: y1/y2 are pitch bounds, xLeft/xRight are time bounds.
-// leftColor = color at older time (left), rightColor = color at newer time (right/piano side).
 void NoteHistoryRenderer::drawQuadH(float y1, float y2, float xLeft, float xRight, float z,
 	const ofColor & leftColor, const ofColor & rightColor) {
 	ofPushStyle();

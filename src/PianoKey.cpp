@@ -169,14 +169,18 @@ void PianoKey::drawHistory(
 	const noteHistory_t & history,
 	const std::deque<channelHistory_t> & events,
 	const std::deque<channelHistory_t> & pedalEvents,
+	const Style & style,
 	const VisualizerConfig & config) {
 
 	int noteInOctave = noteNumber % 12;
 
-	// Resolve percussion remap to determine display position and width
-	const auto & remaps = config.style.remaps;
+	// Resolve remap for this note
+	const auto & remaps = style.remaps;
 	auto mapping = std::find_if(remaps.begin(), remaps.end(),
 		[&](const RemapEntry & m) { return noteNumber == m.pitch; });
+
+	if (mapping != remaps.end() && mapping->suppressed) return; // feature 8
+
 	const float finalPosX = mapping != remaps.end()
 		? (calculatePosition(mapping->mapEndPitch + 1) + calculatePosition(mapping->mapStartPitch)) / 2
 		: rootPosX;
@@ -184,8 +188,16 @@ void PianoKey::drawHistory(
 		? calculatePosition(mapping->mapEndPitch + 1) - calculatePosition(mapping->mapStartPitch)
 		: KEY_ROOT_WIDTHS[noteInOctave];
 
-	NoteHistoryRenderer::draw(currentTime, track, channel, finalPosX, w,
-		history, events, pedalEvents, config);
+	// Apply remap color override (feature 7)
+	if (mapping != remaps.end() && mapping->hasColor) {
+		Style overridden = style;
+		overridden.note.color = mapping->color;
+		NoteHistoryRenderer::draw(currentTime, track, channel, finalPosX, w,
+			history, events, pedalEvents, overridden, config);
+	} else {
+		NoteHistoryRenderer::draw(currentTime, track, channel, finalPosX, w,
+			history, events, pedalEvents, style, config);
+	}
 }
 
 void PianoKey::setActive(bool active) {

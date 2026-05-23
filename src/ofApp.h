@@ -59,6 +59,7 @@ public:
 
 	vector<MidiFileEvent> midiFileEvents;
 	vector<BeatEvent> beatEvents;
+	vector<string> trackNames;
 	size_t playbackHead = 0;
 	int64_t playbackStartTime = -config.playback.startPadding; // initial padding before the first event
 };
