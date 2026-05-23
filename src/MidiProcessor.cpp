@@ -12,7 +12,7 @@ void MidiProcessor::initTracks(int count) {
 }
 
 std::array<bool, 128> MidiProcessor::getActiveKeys() const {
-	std::array<bool, 128> active{};
+	std::array<bool, 128> active {};
 	for (const auto & trackChannels : channels) {
 		for (const auto & ch : trackChannels) {
 			for (int i = 0; i < 128; ++i) {
@@ -27,15 +27,14 @@ void MidiProcessor::trimHistory(int64_t currentTime, int64_t removeOffset) {
 	for (auto & trackChannels : channels) {
 		for (auto & ch : trackChannels) {
 			auto & noteHistories = ch.noteHistories;
-			while (!noteHistories.empty() &&
-				noteHistories.front().pedalOffTime < currentTime - removeOffset) {
+			while (!noteHistories.empty() && noteHistories.front().pedalOffTime < currentTime - removeOffset) {
 				noteHistories.pop_front();
 			}
 		}
 	}
 }
 
-void MidiProcessor::processMidiMessage(ofxMidiMessage & event, uint8_t track, int64_t timestamp) {
+void MidiProcessor::processMidiMessage(ofxMidiMessage & event, uint8_t track, int64_t timestamp, int64_t currentTime) {
 	if (track >= channels.size()) {
 		ofLogWarning() << "processMidiMessage: track " << track << " out of range";
 		return;
@@ -137,7 +136,7 @@ void MidiProcessor::processMidiMessage(ofxMidiMessage & event, uint8_t track, in
 		}
 	} else if (oldChannelPedalDown && !channelPedalDown) { // Pedal released
 		for (auto & noteHistory : noteHistories) {
-			if (!noteHistory.pedalOffTime && noteHistory.offTime) {
+			if (noteHistory.pedalOffTime == MAX_TIME && noteHistory.offTime < MAX_TIME) {
 				noteHistory.pedalOffTime = timestamp;
 			}
 		}
