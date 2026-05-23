@@ -34,6 +34,31 @@ void MidiProcessor::trimHistory(int64_t currentTime, int64_t removeOffset) {
 	}
 }
 
+int64_t MidiProcessor::resolvePedalOffTime(const noteHistory_t & history,
+	const std::deque<channelHistory_t> & pedalEvents) {
+
+	if (history.offTime >= MAX_TIME) return MAX_TIME; // note still on
+
+	// Find pedal state at note-off time
+	bool pedalDown = false;
+	for (const auto & ev : pedalEvents) {
+		if (ev.timestamp > history.offTime) break;
+		if (ev.status == MIDI_CONTROL_CHANGE && ev.control == 64)
+			pedalDown = (ev.value >= 64);
+	}
+
+	if (!pedalDown) return history.offTime;
+
+	// Pedal was held at note-off — find next release after note-off
+	for (const auto & ev : pedalEvents) {
+		if (ev.timestamp <= history.offTime) continue;
+		if (ev.status == MIDI_CONTROL_CHANGE && ev.control == 64 && ev.value < 64)
+			return ev.timestamp;
+	}
+
+	return MAX_TIME; // pedal still held
+}
+
 void MidiProcessor::processMidiMessage(ofxMidiMessage & event, uint8_t track, int64_t timestamp) {
 	if (track >= channels.size()) {
 		ofLogWarning() << "processMidiMessage: track " << (int)track + 1 << " out of range";

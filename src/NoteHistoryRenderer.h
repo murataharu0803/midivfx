@@ -16,7 +16,6 @@ public:
 		float width,
 		const noteHistory_t & history,
 		const std::deque<channelHistory_t> & events,
-		const std::deque<channelHistory_t> & pedalEvents,
 		const Style & style,
 		const VisualizerConfig & config);
 
@@ -29,7 +28,6 @@ private:
 		int64_t currentTime;
 		const Style * style;
 		const VisualizerConfig * config;
-		const std::deque<channelHistory_t> * pedalEvents;
 
 		float toScrollPos(int64_t t) const; // time → position along the scroll axis (Y or X)
 	};

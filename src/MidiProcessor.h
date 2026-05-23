@@ -19,4 +19,9 @@ public:
 
 	// Removes note history entries older than (currentTime - removeOffset)
 	void trimHistory(int64_t currentTime, int64_t removeOffset);
+
+	// Returns the effective pedalOffTime for a note given a (possibly redirected)
+	// pedal event source. Use when pedal.track/channel differs from the note's own.
+	static int64_t resolvePedalOffTime(const noteHistory_t & history,
+		const std::deque<channelHistory_t> & pedalEvents);
 };

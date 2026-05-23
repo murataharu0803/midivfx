@@ -3,6 +3,7 @@
 #include "ofMain.h"
 
 #include "ChannelState.h"
+#include "MidiProcessor.h"
 #include "PianoKey.h"
 #include "VisualizerConfig.h"
 

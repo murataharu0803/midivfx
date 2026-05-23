@@ -135,11 +135,17 @@ void PianoKeys::draw(int64_t currentTime, const VisualizerConfig & config, const
 				int pedalCh = (pedal.channel > 0) ? pedal.channel - 1 : c;
 				pedalTrack = std::min(pedalTrack, (int)channels.size() - 1);
 				pedalCh = std::min(pedalCh, 15);
+
+				bool redirectPedal = (pedalTrack != t || pedalCh != c);
 				const auto & pedalEvents = channels[pedalTrack][pedalCh].channelHistories;
 
 				for (const auto & history : channel.noteHistories) {
-					keys[history.pitch].drawHistory(currentTime, t, c, history,
-						channel.channelHistories, pedalEvents, style, config);
+					noteHistory_t effectiveHistory = history;
+					if (redirectPedal)
+						effectiveHistory.pedalOffTime = MidiProcessor::resolvePedalOffTime(history, pedalEvents);
+
+					keys[history.pitch].drawHistory(currentTime, t, c, effectiveHistory,
+						channel.channelHistories, style, config);
 				}
 			}
 		}

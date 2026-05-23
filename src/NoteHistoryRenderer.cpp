@@ -21,7 +21,6 @@ void NoteHistoryRenderer::draw(
 	float width,
 	const noteHistory_t & history,
 	const std::deque<channelHistory_t> & events,
-	const std::deque<channelHistory_t> & pedalEvents,
 	const Style & style,
 	const VisualizerConfig & config) {
 
@@ -37,7 +36,6 @@ void NoteHistoryRenderer::draw(
 	ctx.currentTime = currentTime;
 	ctx.style = &style;
 	ctx.config = &config;
-	ctx.pedalEvents = &pedalEvents;
 
 	switch (style.note.mode) {
 	case NoteRenderMode::CC:
@@ -111,7 +109,7 @@ void NoteHistoryRenderer::drawCC(const Ctx & ctx, const std::deque<channelHistor
 
 	if (ctx.style->pedal.show) {
 		int64_t pedalStart = std::max(ctx.tFinal, ctx.tStart);
-		drawCCPhase(ctx, *ctx.pedalEvents, pedalStart, ctx.tPedalFinal, ctx.style->pedal.color, 0.0f);
+		drawCCPhase(ctx, events, pedalStart, ctx.tPedalFinal, ctx.style->pedal.color, 0.0f);
 	}
 }
 

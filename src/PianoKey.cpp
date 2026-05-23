@@ -168,7 +168,6 @@ void PianoKey::drawHistory(
 	uint8_t channel,
 	const noteHistory_t & history,
 	const std::deque<channelHistory_t> & events,
-	const std::deque<channelHistory_t> & pedalEvents,
 	const Style & style,
 	const VisualizerConfig & config) {
 
@@ -193,10 +192,10 @@ void PianoKey::drawHistory(
 		Style overridden = style;
 		overridden.note.color = mapping->color;
 		NoteHistoryRenderer::draw(currentTime, track, channel, finalPosX, w,
-			history, events, pedalEvents, overridden, config);
+			history, events, overridden, config);
 	} else {
 		NoteHistoryRenderer::draw(currentTime, track, channel, finalPosX, w,
-			history, events, pedalEvents, style, config);
+			history, events, style, config);
 	}
 }
 
