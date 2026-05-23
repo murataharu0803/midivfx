@@ -5,7 +5,7 @@
 
 // --- Ctx ---
 
-float NoteHistoryRenderer::Ctx::toY(int64_t t) const {
+float NoteHistoryRenderer::Ctx::toScrollPos(int64_t t) const {
 	return config->reverseMode
 		? (float)(t - currentTime) * config->speed
 		: (float)(currentTime - t) * config->speed;
@@ -34,9 +34,15 @@ void NoteHistoryRenderer::draw(
 	ctx.config = &config;
 
 	switch (config.renderMode) {
-		case NoteRenderMode::CC:    drawCC(ctx, events); break;
-		case NoteRenderMode::Decay: drawDecay(ctx); break;
-		default:                    drawDefault(ctx); break;
+	case NoteRenderMode::CC:
+		drawCC(ctx, events);
+		break;
+	case NoteRenderMode::Decay:
+		drawDecay(ctx);
+		break;
+	default:
+		drawDefault(ctx);
+		break;
 	}
 }
 
@@ -63,9 +69,11 @@ void NoteHistoryRenderer::drawCC(const Ctx & ctx, const std::deque<channelHistor
 	nextEvent = advanceToCC(nextEvent);
 
 	int8_t ccValue = curEvent != events.end() ? curEvent->value
-		: nextEvent != events.end() ? nextEvent->value : 127;
+		: nextEvent != events.end()			  ? nextEvent->value
+											  : 127;
 	int64_t ccEventTime = curEvent != events.end() ? curEvent->timestamp
-		: nextEvent != events.end() ? nextEvent->timestamp : 0;
+		: nextEvent != events.end()				   ? nextEvent->timestamp
+												   : 0;
 
 	// Note phase
 	int64_t tStart = ctx.tStart;
@@ -77,7 +85,10 @@ void NoteHistoryRenderer::drawCC(const Ctx & ctx, const std::deque<channelHistor
 		const float ratio = ccValue / 127.f;
 		ofColor color = ctx.config->noteColor;
 		color.a = 255 * ratio;
-		drawQuad(ctx.x1, ctx.x2, ctx.toY(tStart), ctx.toY(tEnd), z, color, color);
+		if (ctx.config->horizontalMode)
+			drawQuadH(ctx.x1, ctx.x2, ctx.toScrollPos(tStart), ctx.toScrollPos(tEnd), z, color, color);
+		else
+			drawQuad(ctx.x1, ctx.x2, ctx.toScrollPos(tStart), ctx.toScrollPos(tEnd), z, color, color);
 
 		tStart = tEnd;
 		if (advance) {
@@ -99,7 +110,10 @@ void NoteHistoryRenderer::drawCC(const Ctx & ctx, const std::deque<channelHistor
 		const float ratio = ccValue / 127.f;
 		ofColor color = ctx.config->pedalColor;
 		color.a = 255 * ratio;
-		drawQuad(ctx.x1, ctx.x2, ctx.toY(tStart), ctx.toY(tEnd), z, color, color);
+		if (ctx.config->horizontalMode)
+			drawQuadH(ctx.x1, ctx.x2, ctx.toScrollPos(tStart), ctx.toScrollPos(tEnd), z, color, color);
+		else
+			drawQuad(ctx.x1, ctx.x2, ctx.toScrollPos(tStart), ctx.toScrollPos(tEnd), z, color, color);
 
 		tStart = tEnd;
 		if (advance) {
@@ -130,7 +144,10 @@ void NoteHistoryRenderer::drawDecay(const Ctx & ctx) {
 		ofColor topColor = ctx.config->noteColor;
 		topColor.a = 255 * topRatio * ctx.velocityRatio;
 
-		drawQuad(ctx.x1, ctx.x2, ctx.toY(t), ctx.toY(tEnd), z, bottomColor, topColor);
+		if (ctx.config->horizontalMode)
+			drawQuadH(ctx.x1, ctx.x2, ctx.toScrollPos(t), ctx.toScrollPos(tEnd), z, bottomColor, topColor);
+		else
+			drawQuad(ctx.x1, ctx.x2, ctx.toScrollPos(t), ctx.toScrollPos(tEnd), z, bottomColor, topColor);
 	}
 
 	// Pedal phase
@@ -147,29 +164,50 @@ void NoteHistoryRenderer::drawDecay(const Ctx & ctx) {
 		ofColor topColor = ctx.config->pedalColor;
 		topColor.a = 255 * topRatio * ctx.velocityRatio;
 
-		drawQuad(ctx.x1, ctx.x2, ctx.toY(t), ctx.toY(tEnd), pedalZ, bottomColor, topColor);
+		if (ctx.config->horizontalMode)
+			drawQuadH(ctx.x1, ctx.x2, ctx.toScrollPos(t), ctx.toScrollPos(tEnd), pedalZ, bottomColor, topColor);
+		else
+			drawQuad(ctx.x1, ctx.x2, ctx.toScrollPos(t), ctx.toScrollPos(tEnd), pedalZ, bottomColor, topColor);
 	}
 }
 
 void NoteHistoryRenderer::drawDefault(const Ctx & ctx) {
-	const float top = ctx.toY(ctx.tStart);
-	const float bottom = ctx.toY(ctx.tFinal);
-	const float pedalBottom = ctx.toY(ctx.tPedalFinal);
-	const float w = ctx.x2 - ctx.x1;
-	const float centerX = (ctx.x1 + ctx.x2) / 2;
+	if (ctx.config->horizontalMode) {
+		const float xA = ctx.toScrollPos(ctx.tStart);
+		const float xB = ctx.toScrollPos(ctx.tFinal);
+		const float xC = ctx.toScrollPos(ctx.tPedalFinal);
+		const float h = ctx.x2 - ctx.x1;
+		const float centerY = (ctx.x1 + ctx.x2) / 2;
 
-	ofPushStyle();
-	ofSetColor(ctx.config->noteColor);
-	ofDrawBox(centerX, (top + bottom) / 2, 0, w, top - bottom, 1);
-	ofPopStyle();
+		ofPushStyle();
+		ofSetColor(ctx.config->noteColor);
+		ofDrawBox((xA + xB) / 2, centerY, 0, std::abs(xB - xA), h, 1);
+		ofPopStyle();
 
-	ofPushStyle();
-	ofSetColor(ctx.config->pedalColor);
-	ofDrawBox(centerX, (bottom + pedalBottom) / 2, 0, w, bottom - pedalBottom, 1);
-	ofPopStyle();
+		ofPushStyle();
+		ofSetColor(ctx.config->pedalColor);
+		ofDrawBox((xB + xC) / 2, centerY, 0, std::abs(xC - xB), h, 1);
+		ofPopStyle();
+	} else {
+		const float top = ctx.toScrollPos(ctx.tStart);
+		const float bottom = ctx.toScrollPos(ctx.tFinal);
+		const float pedalBottom = ctx.toScrollPos(ctx.tPedalFinal);
+		const float w = ctx.x2 - ctx.x1;
+		const float centerX = (ctx.x1 + ctx.x2) / 2;
+
+		ofPushStyle();
+		ofSetColor(ctx.config->noteColor);
+		ofDrawBox(centerX, (top + bottom) / 2, 0, w, top - bottom, 1);
+		ofPopStyle();
+
+		ofPushStyle();
+		ofSetColor(ctx.config->pedalColor);
+		ofDrawBox(centerX, (bottom + pedalBottom) / 2, 0, w, bottom - pedalBottom, 1);
+		ofPopStyle();
+	}
 }
 
-// --- Shared quad helper ---
+// --- Shared quad helpers ---
 
 void NoteHistoryRenderer::drawQuad(float x1, float x2, float yBottom, float yTop, float z,
 	const ofColor & bottomColor, const ofColor & topColor) {
@@ -188,6 +226,32 @@ void NoteHistoryRenderer::drawQuad(float x1, float x2, float yBottom, float yTop
 		mesh.addColor(topColor);
 		mesh.addVertex(ofVec3f(x2, yTop, z));
 		mesh.addColor(topColor);
+
+		mesh.draw();
+	}
+	ofDisableAlphaBlending();
+	ofPopStyle();
+}
+
+// Horizontal mode: y1/y2 are pitch bounds, xLeft/xRight are time bounds.
+// leftColor = color at older time (left), rightColor = color at newer time (right/piano side).
+void NoteHistoryRenderer::drawQuadH(float y1, float y2, float xLeft, float xRight, float z,
+	const ofColor & leftColor, const ofColor & rightColor) {
+	ofPushStyle();
+	ofEnableAlphaBlending();
+	{
+		ofMesh mesh;
+		mesh.setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
+
+		mesh.addVertex(ofVec3f(xLeft, y1, z));
+		mesh.addColor(leftColor);
+		mesh.addVertex(ofVec3f(xLeft, y2, z));
+		mesh.addColor(leftColor);
+
+		mesh.addVertex(ofVec3f(xRight, y1, z));
+		mesh.addColor(rightColor);
+		mesh.addVertex(ofVec3f(xRight, y2, z));
+		mesh.addColor(rightColor);
 
 		mesh.draw();
 	}

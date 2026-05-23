@@ -16,13 +16,14 @@ struct VisualizerConfig {
 	int midiInPort = 1; // live MIDI input port index
 
 	// Timing
-	int64_t dispatchOffset = 0; // how early before onTime to dispatch events
+	int64_t dispatchOffset = 5'000'000; // how early before onTime to dispatch events
 	int64_t removeOffset = 5'000'000; // how long after pedalOffTime to keep history (us)
 
 	// Display
 	bool showPiano = false;
 	bool isAverageWidth = true;
-	bool reverseMode = false; // true = notes fall toward piano
+	bool reverseMode = true;
+	bool horizontalMode = true;
 	float speed = 0.001f; // pixels per microsecond
 	NoteRenderMode renderMode = NoteRenderMode::Decay;
 
@@ -35,10 +36,11 @@ struct VisualizerConfig {
 	int64_t decayTimeSegment = 100'000; // segment length for decay steps (us)
 
 	// Camera
-	float cameraX = 0.f;
-	float cameraY = 500.f;
-	float cameraZ = 1800.f;
-	float cameraTargetY = 500.f; // camera looks at (0, cameraTargetY, 0)
+	float cameraAlongPitchAxis = 0.f;
+	float cameraAlongTimeAxis = 500.f;
+	float cameraZ = horizontalMode ? 3200.f : 1800.f;
+	float cameraTargetAlongPitchAxis = 0.f;
+	float cameraTargetAlongTimeAxis = 500.f;
 
 	// Percussion mappings
 	std::vector<percussionMapping_t> percussionMappings = {

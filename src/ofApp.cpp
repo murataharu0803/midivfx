@@ -7,8 +7,13 @@ void ofApp::setup() {
 	ofBackground(20);
 
 	// Setup camera
-	camera.setPosition(config.cameraX, config.cameraY, config.cameraZ);
-	camera.setTarget(ofVec3f(0, config.cameraTargetY, 0));
+	if (config.horizontalMode) {
+		camera.setPosition(config.cameraTargetAlongTimeAxis, config.cameraAlongPitchAxis, config.cameraZ);
+		camera.setTarget(ofVec3f(config.cameraTargetAlongTimeAxis, config.cameraTargetAlongPitchAxis, 0));
+	} else {
+		camera.setPosition(config.cameraAlongPitchAxis, config.cameraAlongTimeAxis, config.cameraZ);
+		camera.setTarget(ofVec3f(config.cameraTargetAlongPitchAxis, config.cameraTargetAlongTimeAxis, 0));
+	}
 
 	// Setup lighting
 	ofEnableLighting();

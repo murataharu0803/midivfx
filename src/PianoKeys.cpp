@@ -14,9 +14,15 @@ void PianoKeys::setup(const VisualizerConfig & config) {
 void PianoKeys::draw(int64_t currentTime, const VisualizerConfig & config) {
 	ofPushMatrix();
 	{
-		// draw piano keys or a simple line
-		float totalWidth = PianoKey::getKeysWidth(0, 127);
-		ofTranslate(-totalWidth / 2, 0, 0);
+		const float totalWidth = PianoKey::getKeysWidth(0, 127);
+		const bool horizontal = config.horizontalMode;
+
+		if (horizontal)
+			ofTranslate(0, -totalWidth / 2, 0);
+		else
+			ofTranslate(-totalWidth / 2, 0, 0);
+
+		// Draw piano keys or a simple line
 		if (config.showPiano) {
 			for (auto & key : keys) {
 				key.draw();
@@ -24,16 +30,18 @@ void PianoKeys::draw(int64_t currentTime, const VisualizerConfig & config) {
 		} else {
 			ofSetColor(ofColor(255, 255, 255, 140));
 			ofSetLineWidth(2.0f);
-			ofDrawLine(02, 0, 0, totalWidth, 0, 0);
+			if (horizontal)
+				ofDrawLine(0, 0, 0, 0, totalWidth, 0); // vertical line at X=0
+			else
+				ofDrawLine(0, 0, 0, totalWidth, 0, 0); // horizontal line at Y=0
 		}
 
 		// Draw beat lines
 		if (!beatEvents.empty()) {
-			const float totalWidth = PianoKey::getKeysWidth(0, 127);
 			const int64_t visibleStart = currentTime - config.removeOffset;
 			const int64_t visibleEnd = currentTime + config.dispatchOffset;
 
-			auto toY = [&](int64_t t) -> float {
+			auto toScrollPos = [&](int64_t t) -> float {
 				return config.reverseMode
 					? (float)(t - currentTime) * config.speed
 					: (float)(currentTime - t) * config.speed;
@@ -43,11 +51,14 @@ void PianoKeys::draw(int64_t currentTime, const VisualizerConfig & config) {
 			ofDisableLighting();
 			for (const auto & beatEvent : beatEvents) {
 				if (beatEvent.timeUs < visibleStart || beatEvent.timeUs > visibleEnd) continue;
-				float y = toY(beatEvent.timeUs);
 				bool isDownbeat = (beatEvent.beatInBar == 0.0f);
 				ofSetColor(isDownbeat ? ofColor(255, 255, 255, 140) : ofColor(255, 255, 255, 40));
 				ofSetLineWidth(isDownbeat ? 2.0f : 1.0f);
-				ofDrawLine(0, y, 0, totalWidth, y, 0);
+				float pos = toScrollPos(beatEvent.timeUs);
+				if (horizontal)
+					ofDrawLine(pos, 0, 0, pos, totalWidth, 0);
+				else
+					ofDrawLine(0, pos, 0, totalWidth, pos, 0);
 			}
 			ofEnableLighting();
 			ofPopStyle();
