@@ -2,13 +2,22 @@
 
 #include "ofColor.h"
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
 // ── Enums ─────────────────────────────────────────────────────────────────────
 
-enum class PlaybackMode { Preview, Live, Export };
-enum class NoteRenderMode { Fill, Decay, CC };
+enum class PlaybackMode {
+	Preview,
+	Live,
+	Export
+};
+enum class NoteRenderMode {
+	Fill,
+	Decay,
+	CC
+};
 
 // ── Style structs (reusable, nestable) ────────────────────────────────────────
 
@@ -28,8 +37,8 @@ struct NoteStyle {
 struct PedalStyle {
 	bool show = true;
 	ofColor color = ofColor(160, 160, 160);
-	int track = 0;   // 0 = use original track
-	int channel = 0; // 0 = use original channel
+	int track = 0; // 1-based; 0 = use original track
+	int channel = 0; // 1-based; 0 = use original channel
 };
 
 struct RemapEntry {
@@ -50,12 +59,12 @@ struct Style {
 // ── Per-track / per-channel overrides ────────────────────────────────────────
 
 struct ChannelConfig {
-	std::vector<int> channels; // 0-based, resolved from range string
+	std::vector<int> channels; // 1-based, resolved from range string
 	Style style;
 };
 
 struct TrackConfig {
-	std::vector<int> tracks; // 0-based; empty = apply to all (or match by regex)
+	std::vector<int> tracks; // 1-based; empty = apply to all (or match by regex)
 	std::string regex;
 	Style style;
 	std::vector<ChannelConfig> channels;

@@ -59,9 +59,9 @@ static std::vector<int> parseRanges(const std::string & s) {
 			int start = std::stoi(token.substr(0, dash));
 			int end = std::stoi(token.substr(dash + 1));
 			for (int i = start; i <= end; ++i)
-				result.push_back(i - 1); // 1-based → 0-based
+				result.push_back(i);
 		} else {
-			result.push_back(std::stoi(token) - 1);
+			result.push_back(std::stoi(token));
 		}
 	}
 	return result;

@@ -16,6 +16,7 @@ public:
 		float width,
 		const noteHistory_t & history,
 		const std::deque<channelHistory_t> & events,
+		const std::deque<channelHistory_t> & pedalEvents,
 		const VisualizerConfig & config);
 
 private:
@@ -26,11 +27,14 @@ private:
 		float velocityRatio;
 		int64_t currentTime;
 		const VisualizerConfig * config;
+		const std::deque<channelHistory_t> * pedalEvents;
 
 		float toScrollPos(int64_t t) const; // time → position along the scroll axis (Y or X)
 	};
 
 	static void drawCC(const Ctx & ctx, const std::deque<channelHistory_t> & events);
+	static void drawCCPhase(const Ctx & ctx, const std::deque<channelHistory_t> & events,
+		int64_t tFrom, int64_t tTo, const ofColor & baseColor, float z);
 	static void drawDecay(const Ctx & ctx);
 	static void drawDefault(const Ctx & ctx);
 

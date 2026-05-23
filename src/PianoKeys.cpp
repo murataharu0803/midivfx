@@ -1,4 +1,5 @@
 #include "PianoKeys.h"
+#include <algorithm>
 
 PianoKeys::PianoKeys(std::vector<std::array<ChannelState, 16>> & channels, std::vector<BeatEvent> & beatEvents)
 	: channels(channels)
@@ -68,8 +69,18 @@ void PianoKeys::draw(int64_t currentTime, const VisualizerConfig & config) {
 		for (int t = 0; t < (int)channels.size(); ++t) {
 			for (int c = 0; c < 16; ++c) {
 				auto & channel = channels[t][c];
+
+				// Resolve pedal event source (0 = use note's own track/channel)
+				const auto & pedal = config.style.pedal;
+				int pedalTrack = (pedal.track > 0) ? pedal.track - 1 : t;
+				int pedalCh = (pedal.channel > 0) ? pedal.channel - 1 : c;
+				pedalTrack = std::min(pedalTrack, (int)channels.size() - 1);
+				pedalCh = std::min(pedalCh, 15);
+				const auto & pedalEvents = channels[pedalTrack][pedalCh].channelHistories;
+
 				for (const auto & history : channel.noteHistories) {
-					keys[history.pitch].drawHistory(currentTime, t, c, history, channel.channelHistories, config);
+					keys[history.pitch].drawHistory(currentTime, t, c, history,
+						channel.channelHistories, pedalEvents, config);
 				}
 			}
 		}
