@@ -59,6 +59,7 @@ void ofApp::update() {
 			msg.status = (MidiStatus)(e.status);
 			msg.channel = e.channel + 1; // processMidiMessage expects 1-based
 			msg.pitch = e.data1;
+			msg.control = e.data1;
 			msg.velocity = e.data2;
 			msg.value = e.data2;
 			midiProcessor.processMidiMessage(msg, e.track, e.timeUs);
