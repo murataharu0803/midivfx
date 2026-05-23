@@ -1,5 +1,6 @@
 #include "ofApp.h"
 #include "ofMain.h"
+#include "VisualizerConfig.h"
 #include <string>
 
 int main(int argc, char* argv[]) {
@@ -13,11 +14,11 @@ int main(int argc, char* argv[]) {
 	for (int i = 1; i < argc; ++i) {
 		std::string arg = argv[i];
 		if (arg == "--export") {
-			app->config.exportMode = true;
+			app->config.playback.mode = PlaybackMode::Export;
 		} else if (arg == "--output" && i + 1 < argc) {
-			app->config.exportOutputPath = argv[++i];
+			app->config.exportCfg.path = argv[++i];
 		} else if (arg == "--fps" && i + 1 < argc) {
-			app->config.exportFps = std::stoi(argv[++i]);
+			app->config.exportCfg.fps = std::stoi(argv[++i]);
 		}
 	}
 

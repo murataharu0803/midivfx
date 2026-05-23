@@ -79,10 +79,10 @@
 		<ClCompile>
 			<Optimization>Disabled</Optimization>
 			<BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-			<PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions>YAML_CPP_STATIC_DEFINE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 			<RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
 			<WarningLevel>Level3</WarningLevel>
-			<AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);src;..\..\..\addons\ofxBloom\src;..\..\..\addons\ofxGui\src;..\..\..\addons\ofxMidi\libs;..\..\..\addons\ofxMidi\libs\pgmidi;..\..\..\addons\ofxMidi\libs\rtmidi;..\..\..\addons\ofxMidi\src;..\..\..\addons\ofxMidi\src\desktop;..\..\..\addons\ofxMidi\src\ios;..\..\..\addons\ofxMidifile\src;..\..\..\addons\ofxMidifile\libs\midifile\include</AdditionalIncludeDirectories>
+			<AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);src;libs\yaml-cpp\include;..\..\..\addons\ofxBloom\src;..\..\..\addons\ofxGui\src;..\..\..\addons\ofxMidi\libs;..\..\..\addons\ofxMidi\libs\pgmidi;..\..\..\addons\ofxMidi\libs\rtmidi;..\..\..\addons\ofxMidi\src;..\..\..\addons\ofxMidi\src\desktop;..\..\..\addons\ofxMidi\src\ios;..\..\..\addons\ofxMidifile\src;..\..\..\addons\ofxMidifile\libs\midifile\include</AdditionalIncludeDirectories>
 			<CompileAs>CompileAsCpp</CompileAs>
 			<MultiProcessorCompilation>true</MultiProcessorCompilation>
 			<ObjectFileName>$(IntDir)\Build\%(RelativeDir)\$(Configuration)\</ObjectFileName>
@@ -124,10 +124,10 @@
 	<ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64' or '$(Configuration)|$(Platform)'=='Release|ARM64' or '$(Configuration)|$(Platform)'=='Release|ARM64EC'">
 		<ClCompile>
 			<WholeProgramOptimization>false</WholeProgramOptimization>
-			<PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions>YAML_CPP_STATIC_DEFINE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 			<RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
 			<WarningLevel>Level3</WarningLevel>
-			<AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);src;..\..\..\addons\ofxBloom\src;..\..\..\addons\ofxGui\src;..\..\..\addons\ofxMidi\libs;..\..\..\addons\ofxMidi\libs\pgmidi;..\..\..\addons\ofxMidi\libs\rtmidi;..\..\..\addons\ofxMidi\src;..\..\..\addons\ofxMidi\src\desktop;..\..\..\addons\ofxMidi\src\ios;..\..\..\addons\ofxMidifile\src;..\..\..\addons\ofxMidifile\libs\midifile\include</AdditionalIncludeDirectories>
+			<AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);src;libs\yaml-cpp\include;..\..\..\addons\ofxBloom\src;..\..\..\addons\ofxGui\src;..\..\..\addons\ofxMidi\libs;..\..\..\addons\ofxMidi\libs\pgmidi;..\..\..\addons\ofxMidi\libs\rtmidi;..\..\..\addons\ofxMidi\src;..\..\..\addons\ofxMidi\src\desktop;..\..\..\addons\ofxMidi\src\ios;..\..\..\addons\ofxMidifile\src;..\..\..\addons\ofxMidifile\libs\midifile\include</AdditionalIncludeDirectories>
 			<CompileAs>CompileAsCpp</CompileAs>
 			<ObjectFileName>$(IntDir)\Build\%(RelativeDir)\$(Configuration)\</ObjectFileName>
 			<LanguageStandard>stdcpplatest</LanguageStandard>
@@ -227,6 +227,37 @@
 	</ItemDefinitionGroup>
 	<ItemGroup>
 		<ClCompile Include="src\main.cpp" />
+		<ClCompile Include="src\ConfigLoader.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\binary.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\convert.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\depthguard.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\directives.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\emit.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\emitfromevents.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\emitter.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\emitterstate.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\emitterutils.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\exceptions.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\exp.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\fptostring.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\memory.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\node.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\node_data.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\nodebuilder.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\nodeevents.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\null.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\ostream_wrapper.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\parse.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\parser.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\regex_yaml.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\scanner.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\scanscalar.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\scantag.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\scantoken.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\simplekey.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\singledocparser.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\stream.cpp" />
+		<ClCompile Include="libs\yaml-cpp\src\tag.cpp" />
 		<ClCompile Include="src\MidiFileLoader.cpp" />
 		<ClCompile Include="src\MidiProcessor.cpp" />
 		<ClCompile Include="src\NoteHistoryRenderer.cpp" />
@@ -264,6 +295,7 @@
 		<ClCompile Include="..\..\..\addons\ofxMidifile\libs\midifile\src\Options.cpp" />
 	</ItemGroup>
 	<ItemGroup>
+		<ClInclude Include="src\ConfigLoader.h" />
 		<ClInclude Include="src\ChannelState.h" />
 		<ClInclude Include="src\VideoExporter.h" />
 		<ClInclude Include="src\VisualizerConfig.h" />

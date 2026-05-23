@@ -83,7 +83,7 @@ PianoKey::PianoKey(uint8_t note, const VisualizerConfig & config)
 
 	int noteInOctave = note % 12;
 	isBlackKey = BLACK_KEY_PATTERN[noteInOctave];
-	bool isAverageWidth = config.isAverageWidth;
+	bool isAverageWidth = config.display.averageWidth;
 
 	posX = calculatePosition(noteNumber);
 	rootPosX = isAverageWidth
@@ -172,17 +172,14 @@ void PianoKey::drawHistory(
 
 	int noteInOctave = noteNumber % 12;
 
-	// Resolve percussion mapping to determine display position and width
-	auto mapping = std::find_if(
-		config.percussionMappings.begin(),
-		config.percussionMappings.end(),
-		[&](const percussionMapping_t & m) {
-			return m.track == track && m.channel == channel && noteNumber == m.pitch;
-		});
-	const float finalPosX = mapping != config.percussionMappings.end()
+	// Resolve percussion remap to determine display position and width
+	const auto & remaps = config.style.remaps;
+	auto mapping = std::find_if(remaps.begin(), remaps.end(),
+		[&](const RemapEntry & m) { return noteNumber == m.pitch; });
+	const float finalPosX = mapping != remaps.end()
 		? (calculatePosition(mapping->mapEndPitch + 1) + calculatePosition(mapping->mapStartPitch)) / 2
 		: rootPosX;
-	const float w = mapping != config.percussionMappings.end()
+	const float w = mapping != remaps.end()
 		? calculatePosition(mapping->mapEndPitch + 1) - calculatePosition(mapping->mapStartPitch)
 		: KEY_ROOT_WIDTHS[noteInOctave];
 

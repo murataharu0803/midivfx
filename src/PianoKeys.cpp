@@ -15,7 +15,7 @@ void PianoKeys::draw(int64_t currentTime, const VisualizerConfig & config) {
 	ofPushMatrix();
 	{
 		const float totalWidth = PianoKey::getKeysWidth(0, 127);
-		const bool horizontal = config.horizontalMode;
+		const bool horizontal = config.display.horizontal;
 
 		if (horizontal)
 			ofTranslate(0, -totalWidth / 2, 0);
@@ -23,7 +23,7 @@ void PianoKeys::draw(int64_t currentTime, const VisualizerConfig & config) {
 			ofTranslate(-totalWidth / 2, 0, 0);
 
 		// Draw piano keys or a simple line
-		if (config.showPiano) {
+		if (config.display.showPiano) {
 			for (auto & key : keys) {
 				key.draw();
 			}
@@ -38,13 +38,13 @@ void PianoKeys::draw(int64_t currentTime, const VisualizerConfig & config) {
 
 		// Draw beat lines
 		if (!beatEvents.empty()) {
-			const int64_t visibleStart = currentTime - config.removeOffset;
-			const int64_t visibleEnd = currentTime + config.dispatchOffset;
+			const int64_t visibleStart = currentTime - config.timing.removeOffset;
+			const int64_t visibleEnd = currentTime + config.timing.dispatchOffset;
 
 			auto toScrollPos = [&](int64_t t) -> float {
-				return config.reverseMode
-					? (float)(t - currentTime) * config.speed
-					: (float)(currentTime - t) * config.speed;
+				return config.display.reverse
+					? (float)(t - currentTime) * config.display.speed
+					: (float)(currentTime - t) * config.display.speed;
 			};
 
 			ofPushStyle();

@@ -3,11 +3,12 @@
 #include "ofMain.h"
 #include "ofxMidi.h"
 
+#include "ConfigLoader.h"
 #include "MidiFileLoader.h"
 #include "MidiProcessor.h"
 #include "PianoKeys.h"
-#include "VisualizerConfig.h"
 #include "VideoExporter.h"
+#include "VisualizerConfig.h"
 #include "midiUtil.h"
 
 using namespace std;
@@ -59,5 +60,5 @@ public:
 	vector<MidiFileEvent> midiFileEvents;
 	vector<BeatEvent> beatEvents;
 	size_t playbackHead = 0;
-	int64_t playbackStartTime = -5'000'000;
+	int64_t playbackStartTime = -config.playback.startPadding; // initial padding before the first event
 };

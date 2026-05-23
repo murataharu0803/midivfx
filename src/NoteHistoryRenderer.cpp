@@ -6,9 +6,9 @@
 // --- Ctx ---
 
 float NoteHistoryRenderer::Ctx::toScrollPos(int64_t t) const {
-	return config->reverseMode
-		? (float)(t - currentTime) * config->speed
-		: (float)(currentTime - t) * config->speed;
+	return config->display.reverse
+		? (float)(t - currentTime) * config->display.speed
+		: (float)(currentTime - t) * config->display.speed;
 }
 
 // --- Public entry point ---
@@ -26,14 +26,14 @@ void NoteHistoryRenderer::draw(
 	Ctx ctx;
 	ctx.x1 = posX - width / 2;
 	ctx.x2 = posX + width / 2;
-	ctx.tStart = std::max(history.onTime, currentTime - config.removeOffset);
-	ctx.tFinal = std::min(history.offTime, currentTime + config.dispatchOffset);
-	ctx.tPedalFinal = std::min(history.pedalOffTime, currentTime + config.dispatchOffset);
+	ctx.tStart = std::max(history.onTime, currentTime - config.timing.removeOffset);
+	ctx.tFinal = std::min(history.offTime, currentTime + config.timing.dispatchOffset);
+	ctx.tPedalFinal = std::min(history.pedalOffTime, currentTime + config.timing.dispatchOffset);
 	ctx.velocityRatio = std::pow(history.velocity / 127.f, 0.5f);
 	ctx.currentTime = currentTime;
 	ctx.config = &config;
 
-	switch (config.renderMode) {
+	switch (config.style.note.mode) {
 	case NoteRenderMode::CC:
 		drawCC(ctx, events);
 		break;
@@ -83,9 +83,9 @@ void NoteHistoryRenderer::drawCC(const Ctx & ctx, const std::deque<channelHistor
 		bool advance = nextEvent != events.end() && ctx.tFinal >= nextCcTime;
 
 		const float ratio = ccValue / 127.f;
-		ofColor color = ctx.config->noteColor;
+		ofColor color = ctx.config->style.note.color;
 		color.a = 255 * ratio;
-		if (ctx.config->horizontalMode)
+		if (ctx.config->display.horizontal)
 			drawQuadH(ctx.x1, ctx.x2, ctx.toScrollPos(tStart), ctx.toScrollPos(tEnd), z, color, color);
 		else
 			drawQuad(ctx.x1, ctx.x2, ctx.toScrollPos(tStart), ctx.toScrollPos(tEnd), z, color, color);
@@ -108,9 +108,9 @@ void NoteHistoryRenderer::drawCC(const Ctx & ctx, const std::deque<channelHistor
 		bool advance = nextEvent != events.end() && ctx.tPedalFinal >= nextCcTime;
 
 		const float ratio = ccValue / 127.f;
-		ofColor color = ctx.config->pedalColor;
+		ofColor color = ctx.config->style.pedal.color;
 		color.a = 255 * ratio;
-		if (ctx.config->horizontalMode)
+		if (ctx.config->display.horizontal)
 			drawQuadH(ctx.x1, ctx.x2, ctx.toScrollPos(tStart), ctx.toScrollPos(tEnd), z, color, color);
 		else
 			drawQuad(ctx.x1, ctx.x2, ctx.toScrollPos(tStart), ctx.toScrollPos(tEnd), z, color, color);
@@ -127,8 +127,8 @@ void NoteHistoryRenderer::drawCC(const Ctx & ctx, const std::deque<channelHistor
 }
 
 void NoteHistoryRenderer::drawDecay(const Ctx & ctx) {
-	const int64_t seg = ctx.config->decayTimeSegment;
-	const float decayRate = ctx.config->decayRate;
+	const int64_t seg = ctx.config->style.note.decay.timeSegment;
+	const float decayRate = ctx.config->style.note.decay.rate;
 	const float z = 1.0f;
 	const float pedalZ = 0.0f;
 
@@ -139,12 +139,12 @@ void NoteHistoryRenderer::drawDecay(const Ctx & ctx) {
 		const float bottomRatio = std::pow(decayRate, (float)(t - ctx.tStart) / seg);
 		const float topRatio = std::pow(decayRate, (float)(tEnd - ctx.tStart) / seg);
 
-		ofColor bottomColor = ctx.config->noteColor;
+		ofColor bottomColor = ctx.config->style.note.color;
 		bottomColor.a = 255 * bottomRatio * ctx.velocityRatio;
-		ofColor topColor = ctx.config->noteColor;
+		ofColor topColor = ctx.config->style.note.color;
 		topColor.a = 255 * topRatio * ctx.velocityRatio;
 
-		if (ctx.config->horizontalMode)
+		if (ctx.config->display.horizontal)
 			drawQuadH(ctx.x1, ctx.x2, ctx.toScrollPos(t), ctx.toScrollPos(tEnd), z, bottomColor, topColor);
 		else
 			drawQuad(ctx.x1, ctx.x2, ctx.toScrollPos(t), ctx.toScrollPos(tEnd), z, bottomColor, topColor);
@@ -159,12 +159,12 @@ void NoteHistoryRenderer::drawDecay(const Ctx & ctx) {
 		const float bottomRatio = std::pow(decayRate, (float)(t - ctx.tStart) / seg);
 		const float topRatio = std::pow(decayRate, (float)(tEnd - ctx.tStart) / seg);
 
-		ofColor bottomColor = ctx.config->pedalColor;
+		ofColor bottomColor = ctx.config->style.pedal.color;
 		bottomColor.a = 255 * bottomRatio * ctx.velocityRatio;
-		ofColor topColor = ctx.config->pedalColor;
+		ofColor topColor = ctx.config->style.pedal.color;
 		topColor.a = 255 * topRatio * ctx.velocityRatio;
 
-		if (ctx.config->horizontalMode)
+		if (ctx.config->display.horizontal)
 			drawQuadH(ctx.x1, ctx.x2, ctx.toScrollPos(t), ctx.toScrollPos(tEnd), pedalZ, bottomColor, topColor);
 		else
 			drawQuad(ctx.x1, ctx.x2, ctx.toScrollPos(t), ctx.toScrollPos(tEnd), pedalZ, bottomColor, topColor);
@@ -172,7 +172,7 @@ void NoteHistoryRenderer::drawDecay(const Ctx & ctx) {
 }
 
 void NoteHistoryRenderer::drawDefault(const Ctx & ctx) {
-	if (ctx.config->horizontalMode) {
+	if (ctx.config->display.horizontal) {
 		const float xA = ctx.toScrollPos(ctx.tStart);
 		const float xB = ctx.toScrollPos(ctx.tFinal);
 		const float xC = ctx.toScrollPos(ctx.tPedalFinal);
@@ -180,12 +180,12 @@ void NoteHistoryRenderer::drawDefault(const Ctx & ctx) {
 		const float centerY = (ctx.x1 + ctx.x2) / 2;
 
 		ofPushStyle();
-		ofSetColor(ctx.config->noteColor);
+		ofSetColor(ctx.config->style.note.color);
 		ofDrawBox((xA + xB) / 2, centerY, 0, std::abs(xB - xA), h, 1);
 		ofPopStyle();
 
 		ofPushStyle();
-		ofSetColor(ctx.config->pedalColor);
+		ofSetColor(ctx.config->style.pedal.color);
 		ofDrawBox((xB + xC) / 2, centerY, 0, std::abs(xC - xB), h, 1);
 		ofPopStyle();
 	} else {
@@ -196,12 +196,12 @@ void NoteHistoryRenderer::drawDefault(const Ctx & ctx) {
 		const float centerX = (ctx.x1 + ctx.x2) / 2;
 
 		ofPushStyle();
-		ofSetColor(ctx.config->noteColor);
+		ofSetColor(ctx.config->style.note.color);
 		ofDrawBox(centerX, (top + bottom) / 2, 0, w, top - bottom, 1);
 		ofPopStyle();
 
 		ofPushStyle();
-		ofSetColor(ctx.config->pedalColor);
+		ofSetColor(ctx.config->style.pedal.color);
 		ofDrawBox(centerX, (bottom + pedalBottom) / 2, 0, w, bottom - pedalBottom, 1);
 		ofPopStyle();
 	}

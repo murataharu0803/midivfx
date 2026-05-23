@@ -1,18 +1,21 @@
 #include "ofApp.h"
+#include "ConfigLoader.h"
 #include "PianoKey.h"
 
 void ofApp::setup() {
+	config = ConfigLoader::load(ofToDataPath("config.yaml"));
+
 	ofSetFrameRate(60);
 	ofSetVerticalSync(true);
 	ofBackground(20);
 
 	// Setup camera
-	if (config.horizontalMode) {
-		camera.setPosition(config.cameraTargetAlongTimeAxis, config.cameraAlongPitchAxis, config.cameraZ);
-		camera.setTarget(ofVec3f(config.cameraTargetAlongTimeAxis, config.cameraTargetAlongPitchAxis, 0));
+	if (config.display.horizontal) {
+		camera.setPosition(config.camera.targetTimeAxis, config.camera.pitchAxis, config.camera.zAxis);
+		camera.setTarget(ofVec3f(config.camera.targetTimeAxis, config.camera.targetPitchAxis, 0));
 	} else {
-		camera.setPosition(config.cameraAlongPitchAxis, config.cameraAlongTimeAxis, config.cameraZ);
-		camera.setTarget(ofVec3f(config.cameraTargetAlongPitchAxis, config.cameraTargetAlongTimeAxis, 0));
+		camera.setPosition(config.camera.pitchAxis, config.camera.timeAxis, config.camera.zAxis);
+		camera.setTarget(ofVec3f(config.camera.targetPitchAxis, config.camera.targetTimeAxis, 0));
 	}
 
 	// Setup lighting
@@ -29,15 +32,15 @@ void ofApp::setup() {
 
 	pianoKeys.setup(config);
 
-	if (config.useMidiFile) {
-		auto loaded = MidiFileLoader::load(config.midiFilePath);
+	if (config.playback.mode != PlaybackMode::Live) {
+		auto loaded = MidiFileLoader::load(config.playback.midiFilePath);
 		midiFileEvents = std::move(loaded.events);
 		beatEvents = std::move(loaded.beatEvents);
 		midiProcessor.initTracks(loaded.trackCount);
 	} else {
 		midiProcessor.initTracks(1); // one track per port; extend here for multi-port
 		midiIn.listInPorts();
-		midiIn.openPort(config.midiInPort);
+		midiIn.openPort(config.playback.midiInPort);
 		midiIn.addListener(this);
 	}
 
@@ -51,8 +54,8 @@ void ofApp::update() {
 		currentTime = ofGetElapsedTimeMicros() + playbackStartTime;
 	}
 
-	if (config.useMidiFile) {
-		int64_t lookaheadTime = currentTime + config.dispatchOffset;
+	if (config.playback.mode != PlaybackMode::Live) {
+		int64_t lookaheadTime = currentTime + config.timing.dispatchOffset;
 		while (playbackHead < midiFileEvents.size() && midiFileEvents[playbackHead].timeUs <= lookaheadTime) {
 			auto & e = midiFileEvents[playbackHead++];
 			ofxMidiMessage msg;
@@ -72,7 +75,7 @@ void ofApp::update() {
 		pianoKeys.keys[i].setActive(activeKeys[i]);
 	}
 
-	midiProcessor.trimHistory(currentTime, config.removeOffset);
+	midiProcessor.trimHistory(currentTime, config.timing.removeOffset);
 }
 
 void ofApp::draw() {

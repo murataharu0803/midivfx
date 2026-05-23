@@ -25,14 +25,6 @@ struct channelHistory_t {
 	uint8_t value; // velocity for noteOn/noteOff/polyAftertouch, value for CC
 };
 
-struct percussionMapping_t {
-	uint8_t track; // 0 - 255
-	uint8_t channel; // 0 - 15
-	uint8_t pitch;
-	uint8_t mapStartPitch;
-	uint8_t mapEndPitch;
-	bool isSuppressed;
-};
 
 struct MidiFileEvent {
 	int64_t timeUs; // actual note-on/event time (relative to playbackStartTime)

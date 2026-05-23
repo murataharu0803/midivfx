@@ -34,7 +34,7 @@ void MidiProcessor::trimHistory(int64_t currentTime, int64_t removeOffset) {
 	}
 }
 
-void MidiProcessor::processMidiMessage(ofxMidiMessage & event, uint8_t track, int64_t timestamp, int64_t currentTime) {
+void MidiProcessor::processMidiMessage(ofxMidiMessage & event, uint8_t track, int64_t timestamp) {
 	if (track >= channels.size()) {
 		ofLogWarning() << "processMidiMessage: track " << track << " out of range";
 		return;
