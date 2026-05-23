@@ -3,8 +3,6 @@
 #include "PianoKey.h"
 
 void ofApp::setup() {
-	config = ConfigLoader::load(ofToDataPath("config.yaml"));
-
 	ofSetFrameRate(60);
 	ofSetVerticalSync(true);
 	ofBackground(20);
@@ -33,7 +31,10 @@ void ofApp::setup() {
 	pianoKeys.setup(config);
 
 	if (config.playback.mode != PlaybackMode::Live) {
-		auto loaded = MidiFileLoader::load(config.playback.midiFilePath);
+		std::string midiPath = ofFilePath::isAbsolute(config.playback.midiFilePath)
+			? config.playback.midiFilePath
+			: ofFilePath::getCurrentExeDir() + config.playback.midiFilePath;
+		auto loaded = MidiFileLoader::load(midiPath);
 		midiFileEvents = std::move(loaded.events);
 		beatEvents = std::move(loaded.beatEvents);
 		midiProcessor.initTracks(loaded.trackCount);
@@ -44,7 +45,7 @@ void ofApp::setup() {
 		midiIn.addListener(this);
 	}
 
-	exporter.setup(ofGetWidth(), ofGetHeight(), config, midiFileEvents);
+	exporter.setup(config, midiFileEvents);
 }
 
 void ofApp::update() {

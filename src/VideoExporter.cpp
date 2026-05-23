@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <cstdio>
 
-void VideoExporter::setup(int width, int height, const VisualizerConfig & cfg, const std::vector<MidiFileEvent> & events) {
+void VideoExporter::setup(const VisualizerConfig & cfg, const std::vector<MidiFileEvent> & events) {
 	if (cfg.playback.mode != PlaybackMode::Export) return;
 
 	config = &cfg;
@@ -11,13 +11,16 @@ void VideoExporter::setup(int width, int height, const VisualizerConfig & cfg, c
 	ofSetVerticalSync(false);
 	ofSetFrameRate(0);
 
-	fbo.allocate(width, height, GL_RGB);
+	fbo.allocate(config->display.width, config->display.height, GL_RGB);
 
 	endTimeUs = 0;
 	for (auto & e : events) {
 		endTimeUs = std::max(endTimeUs, std::max(e.timeUs, e.offTimeUs));
 	}
 	endTimeUs += config->playback.endPadding;
+	if (config->exportCfg.limit > 0) {
+		endTimeUs = std::min(endTimeUs, config->exportCfg.limit);
+	}
 
 	ofDirectory framesDir(ofToDataPath("export_frames"));
 	if (!framesDir.exists()) framesDir.create();

@@ -143,8 +143,6 @@ VisualizerConfig ConfigLoader::load(const std::string & path) {
 			if (ex["path"]) cfg.exportCfg.path = ex["path"].as<std::string>();
 			if (ex["fps"]) cfg.exportCfg.fps = ex["fps"].as<int>();
 			if (ex["limit"]) cfg.exportCfg.limit = ex["limit"].as<int64_t>();
-			if (ex["width"]) cfg.exportCfg.width = ex["width"].as<int>();
-			if (ex["height"]) cfg.exportCfg.height = ex["height"].as<int>();
 		}
 
 		// timing
@@ -167,6 +165,8 @@ VisualizerConfig ConfigLoader::load(const std::string & path) {
 		// display
 		if (root["display"]) {
 			const auto & d = root["display"];
+			if (d["width"]) cfg.display.width = d["width"].as<int>();
+			if (d["height"]) cfg.display.height = d["height"].as<int>();
 			if (d["showPiano"]) cfg.display.showPiano = d["showPiano"].as<bool>();
 			if (d["averageWidth"]) cfg.display.averageWidth = d["averageWidth"].as<bool>();
 			if (d["reverse"]) cfg.display.reverse = d["reverse"].as<bool>();

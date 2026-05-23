@@ -75,8 +75,6 @@ struct ExportConfig {
 	std::string path = "output.mp4";
 	int fps = 60;
 	int64_t limit = 0; // 0 = no limit
-	int width = 1920;
-	int height = 1080;
 };
 
 struct TimingConfig {
@@ -93,6 +91,8 @@ struct CameraConfig {
 };
 
 struct DisplayConfig {
+	int width = 1920;
+	int height = 1080;
 	bool showPiano = false;
 	bool averageWidth = true;
 	bool reverse = true;

@@ -7,7 +7,7 @@
 
 class VideoExporter {
 public:
-	void setup(int width, int height, const VisualizerConfig & cfg, const std::vector<MidiFileEvent> & events);
+	void setup(const VisualizerConfig & cfg, const std::vector<MidiFileEvent> & events);
 
 	// Call at the start of draw() to redirect rendering into the FBO
 	void begin();

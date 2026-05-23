@@ -1,26 +1,25 @@
 #include "ofApp.h"
 #include "ofMain.h"
-#include "VisualizerConfig.h"
-#include <string>
+#include "ConfigLoader.h"
 
-int main(int argc, char* argv[]) {
+int main(int argc, char * argv[]) {
+	// Resolve config path: --config <path> overrides default (next to executable)
+	std::string configPath = ofFilePath::getCurrentExeDir() + "config.yaml";
+	for (int i = 1; i < argc; ++i) {
+		if (std::string(argv[i]) == "--config" && i + 1 < argc) {
+			configPath = argv[++i];
+		}
+	}
+
+	VisualizerConfig cfg = ConfigLoader::load(configPath);
+
 	ofGLWindowSettings settings;
-	settings.setSize(1920, 1080);
+	settings.setSize(cfg.display.width, cfg.display.height);
 	settings.windowMode = OF_WINDOW;
 
 	auto window = ofCreateWindow(settings);
 	auto app = std::make_shared<ofApp>();
-
-	for (int i = 1; i < argc; ++i) {
-		std::string arg = argv[i];
-		if (arg == "--export") {
-			app->config.playback.mode = PlaybackMode::Export;
-		} else if (arg == "--output" && i + 1 < argc) {
-			app->config.exportCfg.path = argv[++i];
-		} else if (arg == "--fps" && i + 1 < argc) {
-			app->config.exportCfg.fps = std::stoi(argv[++i]);
-		}
-	}
+	app->config = std::move(cfg);
 
 	ofRunApp(window, app);
 	ofRunMainLoop();
