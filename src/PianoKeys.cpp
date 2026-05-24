@@ -6,8 +6,24 @@
 // ── Style resolution ──────────────────────────────────────────────────────────
 
 static Style applyOverride(Style base, const StyleOverride & over) {
-	if (over.note) base.note = *over.note;
-	if (over.pedal) base.pedal = *over.pedal;
+	if (over.note) {
+		const auto & n = *over.note;
+		if (n.mode) {
+			base.note.mode = *n.mode;
+			base.note.ccNumber = n.ccNumber.value_or(0);
+		}
+		if (n.velocity) base.note.velocity = *n.velocity;
+		if (n.color) base.note.color = *n.color;
+		if (n.decay.rate) base.note.decay.rate = *n.decay.rate;
+		if (n.decay.timeSegment) base.note.decay.timeSegment = *n.decay.timeSegment;
+	}
+	if (over.pedal) {
+		const auto & p = *over.pedal;
+		if (p.show) base.pedal.show = *p.show;
+		if (p.color) base.pedal.color = *p.color;
+		if (p.track) base.pedal.track = *p.track;
+		if (p.channel) base.pedal.channel = *p.channel;
+	}
 	base.remaps.insert(base.remaps.end(), over.remaps.begin(), over.remaps.end());
 	return base;
 }
@@ -71,7 +87,7 @@ void PianoKeys::setup(const VisualizerConfig & config) {
 }
 
 void PianoKeys::setupPedalRouting(const VisualizerConfig & config, const std::vector<std::string> & trackNames, MidiProcessor & midiProcessor) {
-	std::map<std::pair<int,int>, std::pair<int,int>> routing;
+	std::map<std::pair<int, int>, std::pair<int, int>> routing;
 	for (int t = 0; t < (int)channels.size(); ++t) {
 		for (int c = 0; c < 16; ++c) {
 			Style style = resolveStyle(config, trackNames, t, c);
@@ -81,7 +97,7 @@ void PianoKeys::setupPedalRouting(const VisualizerConfig & config, const std::ve
 			pedalTrack = std::min(pedalTrack, (int)channels.size() - 1);
 			pedalCh = std::min(pedalCh, 15);
 			if (pedalTrack != t || pedalCh != c)
-				routing[{t, c}] = {pedalTrack, pedalCh};
+				routing[{ t, c }] = { pedalTrack, pedalCh };
 		}
 	}
 	midiProcessor.setPedalRouting(routing);

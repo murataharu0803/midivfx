@@ -120,9 +120,13 @@ static StyleOverride parseStyleOverride(const YAML::Node & node) {
 	if (!node || !node.IsMap()) return s;
 
 	if (node["note"] && node["note"].IsMap()) {
-		NoteStyle n;
+		NoteStyleOverride n;
 		const auto & nn = node["note"];
-		if (nn["mode"]) n.mode = parseNoteMode(nn["mode"].as<std::string>(), n.ccNumber);
+		if (nn["mode"]) {
+			int ccNum = 0;
+			n.mode = parseNoteMode(nn["mode"].as<std::string>(), ccNum);
+			n.ccNumber = ccNum;
+		}
 		if (nn["velocity"]) n.velocity = nn["velocity"].as<bool>();
 		if (nn["color"]) n.color = parseHexColor(nn["color"].as<std::string>());
 		if (nn["decay"]) {
@@ -134,7 +138,7 @@ static StyleOverride parseStyleOverride(const YAML::Node & node) {
 	}
 
 	if (node["pedal"] && node["pedal"].IsMap()) {
-		PedalStyle p;
+		PedalStyleOverride p;
 		const auto & pp = node["pedal"];
 		if (pp["show"]) p.show = pp["show"].as<bool>();
 		if (pp["color"]) p.color = parseHexColor(pp["color"].as<std::string>());

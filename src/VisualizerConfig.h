@@ -56,12 +56,33 @@ struct Style {
 	std::vector<RemapEntry> remaps;
 };
 
+// Field-level partial overrides — only explicitly-present YAML fields are set.
+struct DecayStyleOverride {
+	std::optional<float> rate;
+	std::optional<int64_t> timeSegment;
+};
+
+struct NoteStyleOverride {
+	std::optional<NoteRenderMode> mode;
+	std::optional<int> ccNumber; // set together with mode
+	std::optional<bool> velocity;
+	std::optional<ofColor> color;
+	DecayStyleOverride decay;
+};
+
+struct PedalStyleOverride {
+	std::optional<bool> show;
+	std::optional<ofColor> color;
+	std::optional<int> track;
+	std::optional<int> channel;
+};
+
 // Partial style used in track/channel overrides.
 // Only sections that are explicitly present in the YAML are set.
 // Remaps are always accumulated (combined with parent).
 struct StyleOverride {
-	std::optional<NoteStyle> note;
-	std::optional<PedalStyle> pedal;
+	std::optional<NoteStyleOverride> note;
+	std::optional<PedalStyleOverride> pedal;
 	std::vector<RemapEntry> remaps;
 };
 
