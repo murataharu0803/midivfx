@@ -47,25 +47,27 @@ void MidiProcessor::processMidiMessage(ofxMidiMessage & event, uint8_t track, in
 		return;
 	}
 
-	ofLogNotice() << "Track " << (int)track + 1 << ": " << event.toString();
+	// ofLogNotice() << "Track " << (int)track + 1 << ": " << event.toString();
 
 	MidiStatus status = event.status;
 	ChannelState & channelState = channels[track][event.channel - 1];
 	bool & channelPedalDown = channelState.pedalDown;
 	auto & noteHistories = channelState.noteHistories;
+	auto & channelHistories = channelState.channelHistories;
 
 	// channel history
-	auto & channelHistories = channelState.channelHistories;
-	if (channelHistories.size() > MAX_HISTORY_SIZE - 1) {
-		channelHistories.pop_front();
+	if (status != MIDI_CONTROL_CHANGE || event.control == 64) {
+		if (channelHistories.size() > MAX_HISTORY_SIZE - 1) {
+			channelHistories.pop_front();
+		}
+		channelHistories.push_back({
+			timestamp,
+			status,
+			static_cast<uint8_t>(event.pitch),
+			static_cast<uint8_t>(event.control),
+			static_cast<uint8_t>(event.value),
+		});
 	}
-	channelHistories.push_back({
-		timestamp,
-		status,
-		static_cast<uint8_t>(event.pitch),
-		static_cast<uint8_t>(event.control),
-		static_cast<uint8_t>(event.value),
-	});
 
 	// pedal status
 	bool oldChannelPedalDown = channelPedalDown;
