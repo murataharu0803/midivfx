@@ -34,29 +34,11 @@ void MidiProcessor::trimHistory(int64_t currentTime, int64_t removeOffset) {
 	}
 }
 
-int64_t MidiProcessor::resolvePedalOffTime(const noteHistory_t & history,
-	const std::deque<channelHistory_t> & pedalEvents) {
-
-	if (history.offTime >= MAX_TIME) return MAX_TIME; // note still on
-
-	// Find pedal state at note-off time
-	bool pedalDown = false;
-	for (const auto & ev : pedalEvents) {
-		if (ev.timestamp > history.offTime) break;
-		if (ev.status == MIDI_CONTROL_CHANGE && ev.control == 64)
-			pedalDown = (ev.value >= 64);
-	}
-
-	if (!pedalDown) return history.offTime;
-
-	// Pedal was held at note-off — find next release after note-off
-	for (const auto & ev : pedalEvents) {
-		if (ev.timestamp <= history.offTime) continue;
-		if (ev.status == MIDI_CONTROL_CHANGE && ev.control == 64 && ev.value < 64)
-			return ev.timestamp;
-	}
-
-	return MAX_TIME; // pedal still held
+void MidiProcessor::setPedalRouting(const std::map<std::pair<int, int>, std::pair<int, int>> & routing) {
+	pedalRouting = routing;
+	pedalSubscribers.clear();
+	for (const auto & [sub, src] : routing)
+		pedalSubscribers[src].push_back(sub);
 }
 
 void MidiProcessor::processMidiMessage(ofxMidiMessage & event, uint8_t track, int64_t timestamp) {
@@ -69,6 +51,8 @@ void MidiProcessor::processMidiMessage(ofxMidiMessage & event, uint8_t track, in
 
 	MidiStatus status = event.status;
 	ChannelState & channelState = channels[track][event.channel - 1];
+	bool & channelPedalDown = channelState.pedalDown;
+	auto & noteHistories = channelState.noteHistories;
 
 	// channel history
 	auto & channelHistories = channelState.channelHistories;
@@ -84,35 +68,59 @@ void MidiProcessor::processMidiMessage(ofxMidiMessage & event, uint8_t track, in
 	});
 
 	// pedal status
-	bool & channelPedalDown = channelState.pedalDown;
 	bool oldChannelPedalDown = channelPedalDown;
-	if (status == MIDI_CONTROL_CHANGE && event.control == 64) {
+	if (status == MIDI_CONTROL_CHANGE && event.control == 64)
 		channelPedalDown = (event.value >= 64);
-	}
 
-	// note status
-	auto & noteStatus = channelState.keyStatuses[event.pitch];
-	if (status == MIDI_NOTE_ON && event.velocity > 0) {
-		noteStatus.isOn = true;
-		noteStatus.velocity = event.velocity;
-	} else if (status == MIDI_NOTE_OFF || (status == MIDI_NOTE_ON && event.velocity == 0)) {
-		noteStatus.isOn = false;
-		noteStatus.velocity = 0;
-		if (!channelPedalDown) {
-			noteStatus.isPedalOn = false;
-		}
-	} else if (status == MIDI_POLY_AFTERTOUCH) {
-		noteStatus.velocity = event.value;
-	} else if (oldChannelPedalDown && !channelPedalDown) { // Pedal released
-		for (auto & keyStatus : channelState.keyStatuses) {
-			if (!keyStatus.isOn) {
-				keyStatus.isPedalOn = false;
+	// Effective pedal: use redirected source if routing is configured for this channel
+	auto routeIt = pedalRouting.find({ (int)track, event.channel - 1 });
+	bool useRedirectedPedal = (routeIt != pedalRouting.end());
+	bool effectivePedalDown = useRedirectedPedal
+		? channels[routeIt->second.first][routeIt->second.second].pedalDown
+		: channelPedalDown;
+
+	// Pedal released
+	if (oldChannelPedalDown && !channelPedalDown) {
+		auto releasePedalForState = [&](ChannelState & state) {
+			for (auto & keyStatus : state.keyStatuses) {
+				if (!keyStatus.isOn) keyStatus.isPedalOn = false;
+			}
+			for (auto & nh : state.noteHistories) {
+				if (nh.pedalOffTime == MAX_TIME && nh.offTime < MAX_TIME)
+					nh.pedalOffTime = timestamp;
+			}
+		};
+
+		if (!useRedirectedPedal) releasePedalForState(channelState);
+
+		// Fan out pedal release to subscriber channels
+		auto subsIt = pedalSubscribers.find({ (int)track, event.channel - 1 });
+		if (subsIt != pedalSubscribers.end()) {
+			for (auto & [t2, c2] : subsIt->second) {
+				auto & subState = channels[t2][c2];
+				releasePedalForState(subState);
 			}
 		}
 	}
 
+	// note status
+	if (status == MIDI_NOTE_ON && event.velocity > 0) {
+		auto & noteStatus = channelState.keyStatuses[event.pitch];
+		noteStatus.isOn = true;
+		noteStatus.velocity = event.velocity;
+	} else if (status == MIDI_NOTE_OFF || (status == MIDI_NOTE_ON && event.velocity == 0)) {
+		auto & noteStatus = channelState.keyStatuses[event.pitch];
+		noteStatus.isOn = false;
+		noteStatus.velocity = 0;
+		if (!effectivePedalDown) {
+			noteStatus.isPedalOn = false;
+		}
+	} else if (status == MIDI_POLY_AFTERTOUCH) {
+		auto & noteStatus = channelState.keyStatuses[event.pitch];
+		noteStatus.velocity = event.value;
+	}
+
 	// note history
-	auto & noteHistories = channelState.noteHistories;
 	if (status == MIDI_NOTE_ON && event.velocity > 0) {
 		// check if not already on
 		auto noteHistory = std::find_if(
@@ -154,15 +162,7 @@ void MidiProcessor::processMidiMessage(ofxMidiMessage & event, uint8_t track, in
 			});
 		if (noteHistory != noteHistories.end()) {
 			noteHistory->offTime = timestamp;
-			if (!channelPedalDown) {
-				noteHistory->pedalOffTime = timestamp;
-			}
-		}
-	} else if (oldChannelPedalDown && !channelPedalDown) { // Pedal released
-		for (auto & noteHistory : noteHistories) {
-			if (noteHistory.pedalOffTime == MAX_TIME && noteHistory.offTime < MAX_TIME) {
-				noteHistory.pedalOffTime = timestamp;
-			}
+			if (!effectivePedalDown) noteHistory->pedalOffTime = timestamp;
 		}
 	}
 }

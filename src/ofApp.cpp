@@ -46,6 +46,7 @@ void ofApp::setup() {
 		midiIn.addListener(this);
 	}
 
+	pianoKeys.setupPedalRouting(config, trackNames, midiProcessor);
 	exporter.setup(config, midiFileEvents);
 }
 

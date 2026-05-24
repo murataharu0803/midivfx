@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <map>
 #include <vector>
 
 #include "ChannelState.h"
@@ -20,8 +21,14 @@ public:
 	// Removes note history entries older than (currentTime - removeOffset)
 	void trimHistory(int64_t currentTime, int64_t removeOffset);
 
-	// Returns the effective pedalOffTime for a note given a (possibly redirected)
-	// pedal event source. Use when pedal.track/channel differs from the note's own.
-	static int64_t resolvePedalOffTime(const noteHistory_t & history,
-		const std::deque<channelHistory_t> & pedalEvents);
+	// Sets pedal redirection routing: maps (track, channel) → (pedalTrack, pedalChannel).
+	// Only include entries where the pedal source differs from the note channel.
+	// processMidiMessage will use this to apply pedal events to subscriber channels.
+	void setPedalRouting(const std::map<std::pair<int,int>, std::pair<int,int>> & routing);
+
+private:
+	// Forward: (track, channel) → (pedalTrack, pedalChannel)
+	std::map<std::pair<int,int>, std::pair<int,int>> pedalRouting;
+	// Reverse: (pedalTrack, pedalChannel) → channels that subscribe to it
+	std::map<std::pair<int,int>, std::vector<std::pair<int,int>>> pedalSubscribers;
 };
