@@ -1,13 +1,15 @@
+#include <filesystem>
+
+#include "ConfigLoader.h"
 #include "ofApp.h"
 #include "ofMain.h"
-#include "ConfigLoader.h"
 
 int main(int argc, char * argv[]) {
 	// Resolve config path: --config <path> overrides default (next to executable)
 	std::string configPath = ofFilePath::getCurrentExeDir() + "config.yaml";
 	for (int i = 1; i < argc; ++i) {
 		if (std::string(argv[i]) == "--config" && i + 1 < argc) {
-			configPath = argv[++i];
+			configPath = std::filesystem::absolute(argv[++i]).string();
 		}
 	}
 
