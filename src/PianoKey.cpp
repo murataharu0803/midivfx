@@ -176,7 +176,7 @@ void PianoKey::drawHistory(
 	// Resolve remap for this note
 	const auto & remaps = style.remaps;
 	auto mapping = std::find_if(remaps.begin(), remaps.end(),
-		[&](const RemapEntry & m) { return noteNumber == m.pitch; });
+		[&](const RemapEntry & m) { return !m.pitch.has_value() || noteNumber == m.pitch.value(); });
 
 	if (mapping != remaps.end() && mapping->suppressed) return; // feature 8
 

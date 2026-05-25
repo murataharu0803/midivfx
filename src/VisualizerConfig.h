@@ -42,7 +42,7 @@ struct PedalStyle {
 };
 
 struct RemapEntry {
-	uint8_t pitch = 0;
+	std::optional<uint8_t> pitch;
 	bool suppressed = false;
 	uint8_t mapStartPitch = 0;
 	uint8_t mapEndPitch = 0;
