@@ -3,78 +3,6 @@
 #include <map>
 #include <regex>
 
-// ── Style resolution ──────────────────────────────────────────────────────────
-
-static Style applyOverride(Style base, const StyleOverride & over) {
-	if (over.note) {
-		const auto & n = *over.note;
-		if (n.mode) {
-			base.note.mode = *n.mode;
-			base.note.ccNumber = n.ccNumber.value_or(0);
-		}
-		if (n.velocity) base.note.velocity = *n.velocity;
-		if (n.color) base.note.color = *n.color;
-		if (n.decay.rate) base.note.decay.rate = *n.decay.rate;
-		if (n.decay.timeSegment) base.note.decay.timeSegment = *n.decay.timeSegment;
-	}
-	if (over.pedal) {
-		const auto & p = *over.pedal;
-		if (p.show) base.pedal.show = *p.show;
-		if (p.color) base.pedal.color = *p.color;
-		if (p.track) base.pedal.track = *p.track;
-		if (p.channel) base.pedal.channel = *p.channel;
-	}
-	base.remaps.insert(base.remaps.end(), over.remaps.begin(), over.remaps.end());
-	return base;
-}
-
-static bool trackMatches(const TrackConfig & tc, int track0, const std::vector<std::string> & trackNames) {
-	bool byNumber = false;
-	for (int t : tc.tracks) {
-		if (t - 1 == track0) {
-			byNumber = true;
-			break;
-		}
-	}
-	bool byRegex = false;
-	if (!tc.regex.empty() && track0 < (int)trackNames.size()) {
-		try {
-			std::regex re(tc.regex, std::regex_constants::icase);
-			byRegex = std::regex_search(trackNames[track0], re);
-		} catch (...) { }
-	}
-	if (tc.tracks.empty() && tc.regex.empty()) return false;
-	return byNumber || byRegex;
-}
-
-static Style resolveStyle(const VisualizerConfig & config,
-	const std::vector<std::string> & trackNames,
-	int track0, int channel0) {
-
-	Style result = config.style;
-
-	for (const auto & tc : config.tracks) {
-		if (!trackMatches(tc, track0, trackNames)) continue;
-		result = applyOverride(result, tc.style);
-
-		for (const auto & cc : tc.channels) {
-			bool chMatch = cc.channels.empty();
-			for (int c : cc.channels) {
-				if (c - 1 == channel0) {
-					chMatch = true;
-					break;
-				}
-			}
-			if (!chMatch) continue;
-			result = applyOverride(result, cc.style);
-		}
-	}
-
-	return result;
-}
-
-// ── PianoKeys ─────────────────────────────────────────────────────────────────
-
 PianoKeys::PianoKeys(std::vector<std::array<ChannelState, 16>> & channels, std::vector<BeatEvent> & beatEvents)
 	: channels(channels)
 	, beatEvents(beatEvents) {
@@ -90,7 +18,7 @@ void PianoKeys::setupPedalRouting(const VisualizerConfig & config, const std::ve
 	std::map<std::pair<int, int>, std::pair<int, int>> routing;
 	for (int t = 0; t < (int)channels.size(); ++t) {
 		for (int c = 0; c < 16; ++c) {
-			Style style = resolveStyle(config, trackNames, t, c);
+			const Style & style = channels[t][c].style;
 			const auto & pedal = style.pedal;
 			int pedalTrack = (pedal.track > 0) ? pedal.track - 1 : t;
 			int pedalCh = (pedal.channel > 0) ? pedal.channel - 1 : c;
@@ -160,12 +88,9 @@ void PianoKeys::draw(int64_t currentTime, const VisualizerConfig & config, const
 		for (int t = 0; t < (int)channels.size(); ++t) {
 			for (int c = 0; c < 16; ++c) {
 				auto & channel = channels[t][c];
-
-				Style style = resolveStyle(config, trackNames, t, c);
-
 				for (const auto & history : channel.noteHistories) {
 					keys[history.pitch].drawHistory(currentTime, t, c, history,
-						channel.channelHistories, style, config);
+						channel.channelHistories, channel.style, config);
 				}
 			}
 		}

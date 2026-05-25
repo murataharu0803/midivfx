@@ -19,6 +19,4 @@ public:
 
 	std::vector<std::array<ChannelState, 16>> & channels;
 	std::vector<BeatEvent> & beatEvents;
-
-private:
 };

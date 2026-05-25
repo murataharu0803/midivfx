@@ -22,6 +22,9 @@
 		<ClCompile Include="src\PianoKeys.cpp">
 			<Filter>src</Filter>
 		</ClCompile>
+		<ClCompile Include="src\StyleResolution.cpp">
+			<Filter>src</Filter>
+		</ClCompile>
 		<ClCompile Include="..\..\..\addons\ofxGui\src\ofxBaseGui.cpp">
 			<Filter>addons\ofxGui\src</Filter>
 		</ClCompile>
@@ -144,6 +147,9 @@
 			<Filter>src</Filter>
 		</ClInclude>
 		<ClInclude Include="src\midiUtil.h">
+			<Filter>src</Filter>
+		</ClInclude>
+		<ClInclude Include="src\StyleResolution.h">
 			<Filter>src</Filter>
 		</ClInclude>
 		<ClInclude Include="..\..\..\addons\ofxBloom\src\ofxBloom.h">

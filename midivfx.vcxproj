@@ -265,6 +265,7 @@
 		<ClCompile Include="src\PianoKey.cpp" />
 		<ClCompile Include="src\PianoKeys.cpp" />
 		<ClCompile Include="src\VideoExporter.cpp" />
+		<ClCompile Include="src\StyleResolution.cpp" />
 		<ClCompile Include="..\..\..\addons\ofxBloom\src\ofxBlur.cpp" />
 		<ClCompile Include="..\..\..\addons\ofxGui\src\ofxBaseGui.cpp" />
 		<ClCompile Include="..\..\..\addons\ofxGui\src\ofxButton.cpp" />
@@ -306,6 +307,7 @@
 		<ClInclude Include="src\PianoKey.h" />
 		<ClInclude Include="src\PianoKeys.h" />
 		<ClInclude Include="src\midiUtil.h" />
+		<ClInclude Include="src\StyleResolution.h" />
 		<ClInclude Include="..\..\..\addons\ofxGui\src\ofxBaseGui.h" />
 		<ClInclude Include="..\..\..\addons\ofxGui\src\ofxButton.h" />
 		<ClInclude Include="..\..\..\addons\ofxGui\src\ofxColorPicker.h" />

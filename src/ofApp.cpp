@@ -1,6 +1,7 @@
 #include "ofApp.h"
 #include "ConfigLoader.h"
 #include "PianoKey.h"
+#include "StyleResolution.h"
 
 void ofApp::setup() {
 	ofSetFrameRate(60);
@@ -46,6 +47,11 @@ void ofApp::setup() {
 		midiIn.addListener(this);
 	}
 
+	for (int t = 0; t < (int)midiProcessor.channels.size(); ++t) {
+		for (int c = 0; c < 16; ++c) {
+			midiProcessor.channels[t][c].style = StyleResolution::resolveStyle(config, trackNames, t, c);
+		}
+	}
 	pianoKeys.setupPedalRouting(config, trackNames, midiProcessor);
 	exporter.setup(config, midiFileEvents);
 }
