@@ -22,6 +22,7 @@ int main(int argc, char * argv[]) {
 	auto window = ofCreateWindow(settings);
 	auto app = std::make_shared<ofApp>();
 	app->config = std::move(cfg);
+	app->midiProcessor.debug = app->config.debug;
 
 	ofRunApp(window, app);
 	ofRunMainLoop();

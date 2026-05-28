@@ -32,6 +32,8 @@ struct NoteStyle {
 	ofColor color = ofColor(255, 160, 0);
 	int ccNumber = 0; // CC number when mode == CC
 	DecayStyle decay;
+	float gap = 0.0f; // history gap ratio [0, 1]
+	float radius = 0.0f; // corner radius ratio [0, 0.5] against min(scrollExtent, computedWidth)
 };
 
 struct PedalStyle {
@@ -68,6 +70,8 @@ struct NoteStyleOverride {
 	std::optional<bool> velocity;
 	std::optional<ofColor> color;
 	DecayStyleOverride decay;
+	std::optional<float> gap;
+	std::optional<float> radius;
 };
 
 struct PedalStyleOverride {
@@ -137,6 +141,7 @@ struct DisplayConfig {
 	bool reverse = true;
 	bool horizontal = true;
 	float speed = 0.001f;
+	bool beat = true;
 };
 
 // ── Root config ───────────────────────────────────────────────────────────────
@@ -149,4 +154,5 @@ struct VisualizerConfig {
 	DisplayConfig display;
 	Style style;
 	std::vector<TrackConfig> tracks;
+	bool debug = false;
 };

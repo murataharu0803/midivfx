@@ -24,11 +24,15 @@ public:
 	// Sets pedal redirection routing: maps (track, channel) → (pedalTrack, pedalChannel).
 	// Only include entries where the pedal source differs from the note channel.
 	// processMidiMessage will use this to apply pedal events to subscriber channels.
-	void setPedalRouting(const std::map<std::pair<int,int>, std::pair<int,int>> & routing);
+	void setPedalRouting(const std::map<std::pair<int, int>, std::pair<int, int>> & routing);
+
+	bool debug = false;
 
 private:
+	uint32_t nextNoteId = 0;
+
 	// Forward: (track, channel) → (pedalTrack, pedalChannel)
-	std::map<std::pair<int,int>, std::pair<int,int>> pedalRouting;
+	std::map<std::pair<int, int>, std::pair<int, int>> pedalRouting;
 	// Reverse: (pedalTrack, pedalChannel) → channels that subscribe to it
-	std::map<std::pair<int,int>, std::vector<std::pair<int,int>>> pedalSubscribers;
+	std::map<std::pair<int, int>, std::vector<std::pair<int, int>>> pedalSubscribers;
 };

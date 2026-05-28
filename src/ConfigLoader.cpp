@@ -96,6 +96,8 @@ static Style parseStyle(const YAML::Node & node) {
 			if (d["rate"]) s.note.decay.rate = d["rate"].as<float>();
 			if (d["timeSegment"]) s.note.decay.timeSegment = d["timeSegment"].as<int64_t>();
 		}
+		if (n["gap"]) s.note.gap = n["gap"].as<float>();
+		if (n["radius"]) s.note.radius = n["radius"].as<float>();
 	}
 
 	if (node["pedal"]) {
@@ -134,6 +136,8 @@ static StyleOverride parseStyleOverride(const YAML::Node & node) {
 			if (d["rate"]) n.decay.rate = d["rate"].as<float>();
 			if (d["timeSegment"]) n.decay.timeSegment = d["timeSegment"].as<int64_t>();
 		}
+		if (nn["gap"]) n.gap = nn["gap"].as<float>();
+		if (nn["radius"]) n.radius = nn["radius"].as<float>();
 		s.note = n;
 	}
 
@@ -213,7 +217,10 @@ VisualizerConfig ConfigLoader::load(const std::string & path) {
 			if (d["reverse"]) cfg.display.reverse = d["reverse"].as<bool>();
 			if (d["horizontal"]) cfg.display.horizontal = d["horizontal"].as<bool>();
 			if (d["speed"]) cfg.display.speed = d["speed"].as<float>();
+			if (d["beat"]) cfg.display.beat = d["beat"].as<bool>();
 		}
+
+		if (root["debug"]) cfg.debug = root["debug"].as<bool>();
 
 		// global style
 		if (root["style"]) cfg.style = parseStyle(root["style"]);

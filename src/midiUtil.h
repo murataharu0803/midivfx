@@ -15,6 +15,7 @@ struct noteHistory_t {
 	int64_t pedalOffTime; // TODO
 	uint8_t pitch;
 	uint8_t velocity;
+	uint32_t id = 0;
 };
 
 struct channelHistory_t {

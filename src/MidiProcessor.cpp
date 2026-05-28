@@ -147,12 +147,22 @@ void MidiProcessor::processMidiMessage(ofxMidiMessage & event, uint8_t track, in
 				noteHistories.pop_front();
 			}
 			// and then create history
+			uint32_t noteId = nextNoteId++;
+			if (debug) {
+				ofLogNotice() << "ID=" << noteId
+							  << " pitch=" << (int)event.pitch
+							  << " velocity=" << (int)event.velocity
+							  << " track=" << (int)track
+							  << " channel=" << (int)event.channel
+							  << " onTime=" << timestamp;
+			}
 			noteHistories.push_back({
 				timestamp,
 				MAX_TIME,
 				MAX_TIME,
 				static_cast<uint8_t>(event.pitch),
 				static_cast<uint8_t>(event.velocity),
+				noteId,
 			});
 		}
 	} else if (status == MIDI_NOTE_OFF || (status == MIDI_NOTE_ON && event.velocity == 0)) {

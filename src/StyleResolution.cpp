@@ -13,6 +13,8 @@ Style StyleResolution::applyOverride(Style base, const StyleOverride & over) {
 		if (n.color) base.note.color = *n.color;
 		if (n.decay.rate) base.note.decay.rate = *n.decay.rate;
 		if (n.decay.timeSegment) base.note.decay.timeSegment = *n.decay.timeSegment;
+		if (n.gap) base.note.gap = *n.gap;
+		if (n.radius) base.note.radius = *n.radius;
 	}
 	if (over.pedal) {
 		const auto & p = *over.pedal;

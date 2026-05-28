@@ -57,7 +57,7 @@ void PianoKeys::draw(int64_t currentTime, const VisualizerConfig & config, const
 		}
 
 		// Draw beat lines
-		if (!beatEvents.empty()) {
+		if (config.display.beat && !beatEvents.empty()) {
 			const int64_t visibleStart = currentTime - config.timing.removeOffset;
 			const int64_t visibleEnd = currentTime + config.timing.dispatchOffset;
 
