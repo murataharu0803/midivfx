@@ -168,13 +168,13 @@ void NoteHistoryRenderer::drawDecay(const Ctx & ctx) {
 	const int64_t TAIL_US = 26.f / ctx.config->display.speed;
 
 	// Note phase
+	float bottomRatio = 1.0f;
 	for (int64_t t = ctx.tStart; t < ctx.tFinal; t += seg) {
 		int64_t tEnd = std::min(t + seg, ctx.tFinal);
 		if (ctx.tFinal - tEnd < TAIL_US)
 			tEnd = ctx.tFinal;
 
-		const float bottomRatio = std::pow(decayRate, (float)(t - ctx.tStart) / seg);
-		const float topRatio = std::pow(decayRate, (float)(tEnd - ctx.tStart) / seg);
+		const float topRatio = bottomRatio * decayRate;
 
 		ofColor bottomColor = ctx.style->note.color;
 		bottomColor.a = (uint8_t)(255 * bottomRatio * ctx.velocityRatio);
@@ -192,21 +192,23 @@ void NoteHistoryRenderer::drawDecay(const Ctx & ctx) {
 			ctx.pitchAxisStart, ctx.pitchAxisEnd, t, tEnd,
 			radiusStart, radiusEnd, bottomColor, topColor, 0, ctx);
 
+		bottomRatio = topRatio;
 		if (tEnd == ctx.tFinal) break;
 	}
 
 	if (!hasPedal)
 		return;
 
-	// Pedal phase
+	// Pedal phase — seed ratio from where the note phase left off
 	int64_t pedalStart = std::max(ctx.tFinal, ctx.tStart);
+	float pedalBottomRatio = std::pow(decayRate, (float)(pedalStart - ctx.tStart) / seg);
 	for (int64_t t = pedalStart; t < ctx.tPedalFinal; t += seg) {
 		int64_t tEnd = std::min(t + seg, ctx.tPedalFinal);
 		if (ctx.tPedalFinal - tEnd < TAIL_US)
 			tEnd = ctx.tPedalFinal;
 
-		const float bottomRatio = std::pow(decayRate, (float)(t - ctx.tStart) / seg);
-		const float topRatio = std::pow(decayRate, (float)(tEnd - ctx.tStart) / seg);
+		const float bottomRatio = pedalBottomRatio;
+		const float topRatio = pedalBottomRatio * decayRate;
 
 		ofColor bottomColor = ctx.style->pedal.color;
 		bottomColor.a = (uint8_t)(255 * bottomRatio * ctx.velocityRatio);
@@ -235,6 +237,7 @@ void NoteHistoryRenderer::drawDecay(const Ctx & ctx) {
 			ctx.pitchAxisStart, ctx.pitchAxisEnd, t, tEnd,
 			radiusStart, radiusEnd, bottomColor, topColor, 0, ctx);
 
+		pedalBottomRatio = topRatio;
 		if (tEnd == ctx.tPedalFinal) break;
 	}
 }
