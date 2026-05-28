@@ -3,6 +3,23 @@
 
 #include "NoteHistoryRenderer.h"
 
+// Shared mesh accumulated across all notes in a frame, drawn once in flushBatch()
+static ofMesh sBatch;
+
+void NoteHistoryRenderer::beginBatch() {
+	sBatch.clear();
+	sBatch.setMode(OF_PRIMITIVE_TRIANGLES);
+}
+
+void NoteHistoryRenderer::flushBatch() {
+	if (sBatch.getNumVertices() == 0) return;
+	ofPushStyle();
+	ofEnableAlphaBlending();
+	sBatch.draw();
+	ofDisableAlphaBlending();
+	ofPopStyle();
+}
+
 static constexpr float kHalfPi = 1.5707963268f;
 static constexpr float kPi = 3.1415926536f;
 
@@ -299,12 +316,6 @@ void NoteHistoryRenderer::drawRoundedRect(
 	RectAttribute attr, float z, const ofColor & color1, const ofColor & color2,
 	bool gradientDirHorizontal, int segs) {
 
-	ofPushStyle();
-	ofEnableAlphaBlending();
-
-	ofMesh mesh;
-	mesh.setMode(OF_PRIMITIVE_TRIANGLES);
-
 	const int segsZ = std::max(1, segs);
 
 	bool xFlipped = (attr.x2 < attr.x1);
@@ -333,12 +344,12 @@ void NoteHistoryRenderer::drawRoundedRect(
 	};
 
 	auto addV = [&](float x, float y) {
-		mesh.addVertex(ofVec3f(x, y, z));
-		mesh.addColor(colorAt(x, y));
+		sBatch.addVertex(ofVec3f(x, y, z));
+		sBatch.addColor(colorAt(x, y));
 	};
 	auto addCV = [&]() {
-		mesh.addVertex(ofVec3f((attr.x1 + attr.x2) / 2, (attr.y1 + attr.y2) / 2, z));
-		mesh.addColor(colorAt((attr.x1 + attr.x2) / 2, (attr.y1 + attr.y2) / 2));
+		sBatch.addVertex(ofVec3f((attr.x1 + attr.x2) / 2, (attr.y1 + attr.y2) / 2, z));
+		sBatch.addColor(colorAt((attr.x1 + attr.x2) / 2, (attr.y1 + attr.y2) / 2));
 	};
 
 	for (int i = 0; i < segs; i++) {
@@ -378,8 +389,4 @@ void NoteHistoryRenderer::drawRoundedRect(
 		addV(cx2 + attr.rx2 * std::cos(b2), cy2 + attr.ry2 * std::sin(b2));
 	}
 
-	mesh.draw();
-
-	ofDisableAlphaBlending();
-	ofPopStyle();
 }

@@ -1,4 +1,5 @@
 #include "PianoKeys.h"
+#include "NoteHistoryRenderer.h"
 #include <algorithm>
 #include <map>
 #include <regex>
@@ -84,7 +85,8 @@ void PianoKeys::draw(int64_t currentTime, const VisualizerConfig & config, const
 			ofPopStyle();
 		}
 
-		// Draw note histories
+		// Draw note histories — batch all geometry into a single mesh draw call
+		NoteHistoryRenderer::beginBatch();
 		for (int t = 0; t < (int)channels.size(); ++t) {
 			for (int c = 0; c < 16; ++c) {
 				auto & channel = channels[t][c];
@@ -94,6 +96,7 @@ void PianoKeys::draw(int64_t currentTime, const VisualizerConfig & config, const
 				}
 			}
 		}
+		NoteHistoryRenderer::flushBatch();
 	}
 	ofPopMatrix();
 }

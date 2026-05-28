@@ -19,6 +19,10 @@ public:
 		const Style & style,
 		const VisualizerConfig & config);
 
+	// Mesh batch API — call beginBatch() before drawing notes, flushBatch() after
+	static void beginBatch();
+	static void flushBatch();
+
 private:
 	// Shared context precomputed once per note, used by all render modes
 	struct Ctx {
