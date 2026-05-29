@@ -50,8 +50,8 @@ jobs:
             /clp:ErrorsOnly
         shell: pwsh
 
-      - name: List OF export folder
-        run: Get-ChildItem "C:\of\export" -Recurse -ErrorAction SilentlyContinue | Select-Object FullName
+      - name: Find DLLs in OF tree
+        run: Get-ChildItem "C:\of" -Recurse -Filter "*.dll" -ErrorAction SilentlyContinue | Select-Object FullName
         shell: pwsh
 
       - name: Collect release files
