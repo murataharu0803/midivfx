@@ -75,25 +75,35 @@ midivfx/
 │   ├── PianoKey.h/cpp            # Individual key geometry and rendering
 │   ├── NoteHistoryRenderer.h/cpp # Waterfall/history visualization (fill, decay, CC modes)
 │   ├── VideoExporter.h/cpp       # Offline video export via FFmpeg
+│   ├── StyleResolution.h/cpp     # Resolves visual styles based on config and track/channel overrides
 │   └── midiUtil.h                # Core MIDI data structures
-└── bin/
-    ├── config.yaml               # Main configuration file
-    └── ffmpeg.exe                # Video encoding dependency
+└── examples/
+    ├── config.yaml               # Example configuration files
+    ├── *.mp3                     # Example audio files
+    └── *.mid                     # Example MIDI files
 ```
 
 ## Configuration
 
-All behavior is controlled via `bin/config.yaml`.
+All behavior is controlled via yaml config file.
 
 **playback** — input source
 - `mode`: `preview` (MIDI file), `live` (real-time MIDI input), `export` (offline render)
 - `midiFilePath`: path to `.mid` file
+- `audioFilePath`: path to audio file
 - `midiInPort`: live MIDI input port index
+- `startPadding`: extra lead-in time before the first note (microseconds)
+- `endPadding`: extra tail time after the last note (microseconds)
 
 **export** — video output
 - `path`: output `.mp4` file path
 - `fps`: frame rate
 - `limit`: max duration in microseconds (`0` = no limit)
+
+**timing** — event scheduling offsets
+- `dispatchOffset`: how early before a note's on-time to dispatch events (microseconds)
+- `removeOffset`: how long after pedal-off to keep note history (microseconds)
+- `audioOffset`: audio delay relative to visuals (microseconds); positive = audio starts later
 
 **display** — visual layout
 - `width`, `height`: window resolution
@@ -102,6 +112,7 @@ All behavior is controlled via `bin/config.yaml`.
 - `horizontal`: rotate 90° (pitch on Y-axis, time on X-axis)
 - `speed`: scroll speed in pixels per microsecond
 - `averageWidth`: use average key width instead of exact key widths
+- `beat`: overlay beat/bar lines
 
 **camera** — 3D view
 - `pitchAxis`, `timeAxis`, `zAxis`: camera position
@@ -111,14 +122,20 @@ All behavior is controlled via `bin/config.yaml`.
 - `note.mode`: `fill`, `decay`, or `CC<n>` (e.g. `CC64`)
 - `note.velocity`: modulate alpha/brightness by MIDI velocity
 - `note.color`: hex color
+- `note.gap`: gap between adjacent notes as a ratio of note height `[0, 1]`
+- `note.radius`: corner radius as a ratio of `min(scrollExtent, noteWidth)` `[0, 0.5]`
+- `note.z`: z-depth offset of note mesh vertices
 - `note.decay.rate` / `note.decay.timeSegment`: decay parameters
 - `pedal.show`, `pedal.color`: sustain pedal visualization
+- `pedal.track`, `pedal.channel`: redirect pedal data to a different track/channel (1-based)
 - `remaps`: percussive pitch remapping entries
 
 **tracks** — per-track/channel overrides
 - `track`: track numbers (1-based, supports ranges like `1,3-5`)
-- `regex`: match track names by regex pattern
+- `regex`: match track names by regex pattern (case-insensitive)
 - `channels`: nested per-channel style overrides
+
+**debug** — top-level boolean; shows debug overlays such as history IDs when `true`
 
 ## Roadmap
 - [x] Piano keyboard
@@ -137,11 +154,11 @@ All behavior is controlled via `bin/config.yaml`.
 - [x] Average key width mode
 - [x] Everything parameterized via config.yaml
 - [x] Per-track / per-channel style overrides (with regex matching)
+- [ ] Note history styles
+- [ ] Current playing effects
 - [ ] Lighting
     - [ ] Piano key lighting
     - [ ] Note history lighting
     - [ ] Line lighting
     - [ ] Bloom/glow
     - [ ] Particle effects
-- [ ] Note history styles
-- [ ] Current playing effects

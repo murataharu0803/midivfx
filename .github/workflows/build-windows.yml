@@ -11,6 +11,9 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+
       - name: Download openFrameworks
         run: |
           $url = "https://github.com/openframeworks/openFrameworks/releases/download/0.12.0/of_v0.12.0_vs_release.zip"
@@ -19,16 +22,17 @@ jobs:
           Rename-Item "C:\of_v0.12.0_vs_release" "C:\of"
         shell: pwsh
 
+      - name: Link project into OF tree
+        run: |
+          New-Item -ItemType Directory -Force "C:\of\apps\myApps"
+          New-Item -ItemType Junction -Path "C:\of\apps\myApps\midivfx" -Target "$env:GITHUB_WORKSPACE"
+        shell: pwsh
+
       - name: Clone ofxMidi
         run: git clone https://github.com/danomatika/ofxMidi.git C:\of\addons\ofxMidi
 
       - name: Clone ofxMidifile
         run: git clone https://github.com/bgstaal/ofxMidifile.git C:\of\addons\ofxMidifile
-
-      - name: Check out project
-        uses: actions/checkout@v4
-        with:
-          path: C:\of\apps\myApps\midivfx
 
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
@@ -45,15 +49,11 @@ jobs:
       - name: Collect release files
         run: |
           $bin = "C:\of\apps\myApps\midivfx\bin"
-          $out = "release-windows"
+          $out = "$env:GITHUB_WORKSPACE\release-windows"
           New-Item -ItemType Directory -Path $out
 
-          # Executable
           Copy-Item "$bin\midivfx.exe" $out
-
-          # OF ships DLLs into bin\ during build — copy everything except debug artifacts
           Get-ChildItem "$bin\*.dll" | Copy-Item -Destination $out
-
         shell: pwsh
 
       - name: Upload artifact
