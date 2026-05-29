@@ -1,6 +1,8 @@
 # MIDIVFX
 A C++ openFrameworks application that transforms MIDI music into animated piano roll visualizations, with support for live input, MIDI file playback, and offline video rendering.
 
+<img width="1912" height="1070" alt="image" src="https://github.com/user-attachments/assets/2a3dd2ff-b6a5-4e6c-b7a0-2b8f1e68dbdf" />
+
 ## Project Overview
 
 **Goal**
