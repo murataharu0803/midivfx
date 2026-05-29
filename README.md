@@ -20,6 +20,50 @@ A C++ openFrameworks application that transforms MIDI music into animated piano 
 - **Video export:** FFmpeg (H.264/MP4)
 - **Development Platform:** Windows (Visual Studio)
 
+## Quick Start (Release)
+
+1. Download `midivfx-windows-x64-vX.X.X.zip` from the [Releases](../../releases) page and extract it.
+2. Place your `.mid` and audio files (`.mp3`, `.wav`) anywhere you like.
+3. Create a `config.yaml` next to your media files. See [examples/config2.yaml](examples/config2.yaml) for a full annotated example, or use this minimal starting point:
+
+```yaml
+playback:
+  mode: preview
+  midiFilePath: mysong.mid
+  audioFilePath: mysong.mp3  # optional
+  startPadding: 3000000      # 3 second lead-in (microseconds)
+```
+
+4. Run:
+
+```
+midivfx.exe --config path\to\config.yaml
+```
+
+File paths in `config.yaml` are resolved relative to the config file itself, so you can keep everything in one folder.
+
+For **video export**, place `ffmpeg.exe` next to `midivfx.exe`, set `playback.mode: export` and `export.path: output.mp4`, then run the same command.
+
+## Usage
+
+```
+midivfx.exe [--config <path/to/config.yaml>]
+```
+
+Without `--config`, it looks for `config.yaml` in the same folder as the executable.
+
+**Modes** (set `playback.mode` in config.yaml):
+
+| Mode | Description |
+|------|-------------|
+| `preview` | Load a MIDI file and display it in a window |
+| `live` | Visualize real-time input from a MIDI port |
+| `export` | Render a MIDI file to an MP4 video (requires `ffmpeg.exe`) |
+
+**Preview / Live** — a window opens with the visualization. Mouse controls the 3D camera (drag to orbit, scroll to zoom).
+
+**Export** — no window interaction needed. Frames are rendered offline and encoded to the path specified in `export.path`. Progress is printed to stdout.
+
 ## Build
 
 **Prerequisites**
@@ -38,28 +82,6 @@ A C++ openFrameworks application that transforms MIDI music into animated piano 
 3. Build → outputs `bin/midivfx_debug.exe` or `bin/midivfx.exe`.
 
 `yaml-cpp` is embedded under `libs/yaml-cpp/` and compiled as part of the project — no separate installation needed.
-
-## Usage
-
-Run the executable from `bin/`. It reads `config.yaml` from the same directory by default.
-
-```
-midivfx.exe [--config <path/to/config.yaml>]
-```
-
-Use `--config` to point to a different configuration file.
-
-**Modes** (set `playback.mode` in config.yaml):
-
-| Mode | Description |
-|------|-------------|
-| `preview` | Load a MIDI file and display it in a window |
-| `live` | Visualize real-time input from a MIDI port |
-| `export` | Render a MIDI file to an MP4 video (requires `ffmpeg.exe`) |
-
-**Preview / Live** — a window opens with the visualization. Mouse controls the 3D camera (drag to orbit, scroll to zoom).
-
-**Export** — no window interaction needed. Frames are captured to `export_frames/` then encoded to the path specified in `export.path`. Progress is printed to stdout.
 
 ## Architecture
 
