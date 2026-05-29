@@ -50,6 +50,10 @@ jobs:
             /clp:ErrorsOnly
         shell: pwsh
 
+      - name: List OF export folder
+        run: Get-ChildItem "C:\of\export" -Recurse -ErrorAction SilentlyContinue | Select-Object FullName
+        shell: pwsh
+
       - name: Collect release files
         run: |
           $bin = "C:\of\apps\myApps\midivfx\bin"
@@ -57,18 +61,36 @@ jobs:
           New-Item -ItemType Directory -Path $out
 
           Copy-Item "$bin\midivfx.exe" $out
-          Get-ChildItem "$bin\*.dll" | Copy-Item -Destination $out
+
+          # OF runtime DLLs (FreeImage, fmod, etc.) from the release zip's export folder
+          Get-ChildItem "C:\of\export\vs\libs\*.dll" -ErrorAction SilentlyContinue | Copy-Item -Destination $out
+
+          # Any extra DLLs copied into bin by the build
+          Get-ChildItem "$bin\*.dll" -ErrorAction SilentlyContinue | Copy-Item -Destination $out
+
+          # VC++ 2022 runtime DLLs so users don't need the redistributable installed
+          $vctools = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
+            -latest -property installationPath
+          $runtime = "$vctools\VC\Redist\MSVC\*\x64\Microsoft.VC143.CRT"
+          Get-ChildItem $runtime -ErrorAction SilentlyContinue | Select-Object -Last 1 | `
+            Get-ChildItem -Filter "*.dll" | Copy-Item -Destination $out
+        shell: pwsh
+
+      - name: Zip release
+        run: |
+          $tag = "${{ github.ref_name }}"
+          Compress-Archive -Path "release-windows\*" -DestinationPath "midivfx-windows-x64-$tag.zip"
         shell: pwsh
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: midivfx-windows-x64
-          path: release-windows/
+          path: midivfx-windows-x64-*.zip
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: release-windows/**
+          files: midivfx-windows-x64-*.zip
           generate_release_notes: true
