@@ -30,11 +30,11 @@ jobs:
           New-Item -ItemType Junction -Path "C:\of\apps\myApps\midivfx" -Target "$env:GITHUB_WORKSPACE"
         shell: pwsh
 
-      - name: Clone ofxMidi
-        run: git clone https://github.com/danomatika/ofxMidi.git C:\of\addons\ofxMidi
-
-      - name: Clone ofxMidifile
-        run: git clone https://github.com/bgstaal/ofxMidifile.git C:\of\addons\ofxMidifile
+      - name: Clone addons
+        run: |
+          git clone https://github.com/danomatika/ofxMidi.git C:\of\addons\ofxMidi
+          git clone https://github.com/bgstaal/ofxMidifile.git C:\of\addons\ofxMidifile
+          git clone https://github.com/P-A-N/ofxBloom.git C:\of\addons\ofxBloom
 
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
