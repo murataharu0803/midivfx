@@ -1,0 +1,70 @@
+name: Build Windows
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Download openFrameworks
+        run: |
+          $url = "https://github.com/openframeworks/openFrameworks/releases/download/0.12.0/of_v0.12.0_vs_release.zip"
+          Invoke-WebRequest -Uri $url -OutFile "of.zip" -TimeoutSec 300
+          Expand-Archive -Path "of.zip" -DestinationPath "C:\" -Force
+          Rename-Item "C:\of_v0.12.0_vs_release" "C:\of"
+        shell: pwsh
+
+      - name: Clone ofxMidi
+        run: git clone https://github.com/danomatika/ofxMidi.git C:\of\addons\ofxMidi
+
+      - name: Clone ofxMidifile
+        run: git clone https://github.com/bgstaal/ofxMidifile.git C:\of\addons\ofxMidifile
+
+      - name: Check out project
+        uses: actions/checkout@v4
+        with:
+          path: C:\of\apps\myApps\midivfx
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build Release x64
+        run: |
+          msbuild "C:\of\apps\myApps\midivfx\midivfx.sln" `
+            /p:Configuration=Release `
+            /p:Platform=x64 `
+            /m `
+            /clp:ErrorsOnly
+        shell: pwsh
+
+      - name: Collect release files
+        run: |
+          $bin = "C:\of\apps\myApps\midivfx\bin"
+          $out = "release-windows"
+          New-Item -ItemType Directory -Path $out
+
+          # Executable
+          Copy-Item "$bin\midivfx.exe" $out
+
+          # OF ships DLLs into bin\ during build — copy everything except debug artifacts
+          Get-ChildItem "$bin\*.dll" | Copy-Item -Destination $out
+
+        shell: pwsh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: midivfx-windows-x64
+          path: release-windows/
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-windows/**
+          generate_release_notes: true
