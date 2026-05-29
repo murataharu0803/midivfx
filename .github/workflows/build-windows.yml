@@ -61,16 +61,6 @@ jobs:
           # OF runtime DLLs
           Copy-Item "C:\of\libs\fmod\lib\vs\x64\fmod.dll" $out
           Copy-Item "C:\of\libs\FreeImage\lib\vs\x64\FreeImage.dll" $out
-
-          # Any extra DLLs copied into bin by the build
-          Get-ChildItem "$bin\*.dll" -ErrorAction SilentlyContinue | Copy-Item -Destination $out
-
-          # VC++ 2022 runtime DLLs so users don't need the redistributable installed
-          $vctools = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
-            -latest -property installationPath
-          $runtime = "$vctools\VC\Redist\MSVC\*\x64\Microsoft.VC143.CRT"
-          Get-ChildItem $runtime -ErrorAction SilentlyContinue | Select-Object -Last 1 | `
-            Get-ChildItem -Filter "*.dll" | Copy-Item -Destination $out
         shell: pwsh
 
       - name: Zip release
