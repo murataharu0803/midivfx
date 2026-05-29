@@ -50,10 +50,6 @@ jobs:
             /clp:ErrorsOnly
         shell: pwsh
 
-      - name: Find DLLs in OF tree
-        run: Get-ChildItem "C:\of" -Recurse -Filter "*.dll" -ErrorAction SilentlyContinue | Select-Object FullName
-        shell: pwsh
-
       - name: Collect release files
         run: |
           $bin = "C:\of\apps\myApps\midivfx\bin"
@@ -62,8 +58,9 @@ jobs:
 
           Copy-Item "$bin\midivfx.exe" $out
 
-          # OF runtime DLLs (FreeImage, fmod, etc.) from the release zip's export folder
-          Get-ChildItem "C:\of\export\vs\libs\*.dll" -ErrorAction SilentlyContinue | Copy-Item -Destination $out
+          # OF runtime DLLs
+          Copy-Item "C:\of\libs\fmod\lib\vs\x64\fmod.dll" $out
+          Copy-Item "C:\of\libs\FreeImage\lib\vs\x64\FreeImage.dll" $out
 
           # Any extra DLLs copied into bin by the build
           Get-ChildItem "$bin\*.dll" -ErrorAction SilentlyContinue | Copy-Item -Destination $out
