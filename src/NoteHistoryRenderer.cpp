@@ -155,7 +155,7 @@ void NoteHistoryRenderer::drawCCPhase(
 
 		drawSegment(
 			ctx.pitchAxisStart, ctx.pitchAxisEnd, t, tEnd,
-			radiusStart, radiusEnd, color, color, 0, ctx);
+			radiusStart, radiusEnd, color, color, z, ctx);
 
 		t = tEnd;
 		if (advance) {
@@ -171,7 +171,7 @@ void NoteHistoryRenderer::drawCCPhase(
 
 void NoteHistoryRenderer::drawCC(const Ctx & ctx, const std::deque<channelHistory_t> & events) {
 	const bool hasPedal = ctx.style->pedal.show && (ctx.tPedalFinal > ctx.tFinal);
-	drawCCPhase(ctx, events, ctx.tStart, ctx.tFinal, ctx.style->note.color, 1.0f, false);
+	drawCCPhase(ctx, events, ctx.tStart, ctx.tFinal, ctx.style->note.color, ctx.style->note.z, false);
 	if (hasPedal)
 		drawCCPhase(ctx, events, ctx.tFinal, ctx.tPedalFinal, ctx.style->pedal.color, 0.0f, true);
 }
@@ -179,7 +179,7 @@ void NoteHistoryRenderer::drawCC(const Ctx & ctx, const std::deque<channelHistor
 void NoteHistoryRenderer::drawDecay(const Ctx & ctx) {
 	const int64_t seg = ctx.style->note.decay.timeSegment;
 	const float decayRate = ctx.style->note.decay.rate;
-	const float z = 1.0f;
+	const float z = ctx.style->note.z;
 	const float pedalZ = 0.0f;
 	const bool hasPedal = ctx.style->pedal.show && (ctx.tPedalFinal > ctx.tFinal);
 	const int64_t TAIL_US = 26.f / ctx.config->display.speed;
@@ -207,7 +207,7 @@ void NoteHistoryRenderer::drawDecay(const Ctx & ctx) {
 
 		drawSegment(
 			ctx.pitchAxisStart, ctx.pitchAxisEnd, t, tEnd,
-			radiusStart, radiusEnd, bottomColor, topColor, 0, ctx);
+			radiusStart, radiusEnd, bottomColor, topColor, z, ctx);
 
 		bottomRatio = topRatio;
 		if (tEnd == ctx.tFinal) break;
@@ -252,7 +252,7 @@ void NoteHistoryRenderer::drawDecay(const Ctx & ctx) {
 
 		drawSegment(
 			ctx.pitchAxisStart, ctx.pitchAxisEnd, t, tEnd,
-			radiusStart, radiusEnd, bottomColor, topColor, 0, ctx);
+			radiusStart, radiusEnd, bottomColor, topColor, pedalZ, ctx);
 
 		pedalBottomRatio = topRatio;
 		if (tEnd == ctx.tPedalFinal) break;
@@ -266,7 +266,7 @@ void NoteHistoryRenderer::drawDefault(const Ctx & ctx) {
 	const bool hasPedal = ctx.style->pedal.show && (ctx.tPedalFinal > ctx.tFinal);
 
 	drawSegment(ctx.pitchAxisStart, ctx.pitchAxisEnd, ctx.tStart, ctx.tFinal,
-		ctx.radius, ctx.radius, noteColor, noteColor, 0, ctx);
+		ctx.radius, ctx.radius, noteColor, noteColor, ctx.style->note.z, ctx);
 	if (hasPedal) {
 		drawSegment(ctx.pitchAxisStart, ctx.pitchAxisEnd, ctx.tFinal, ctx.tPedalFinal,
 			-ctx.radius, ctx.radius, pedalColor, pedalColor, 0, ctx);

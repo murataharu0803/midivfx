@@ -98,6 +98,7 @@ static Style parseStyle(const YAML::Node & node) {
 		}
 		if (n["gap"]) s.note.gap = n["gap"].as<float>();
 		if (n["radius"]) s.note.radius = n["radius"].as<float>();
+		if (n["z"]) s.note.z = n["z"].as<float>();
 	}
 
 	if (node["pedal"]) {
@@ -138,6 +139,7 @@ static StyleOverride parseStyleOverride(const YAML::Node & node) {
 		}
 		if (nn["gap"]) n.gap = nn["gap"].as<float>();
 		if (nn["radius"]) n.radius = nn["radius"].as<float>();
+		if (nn["z"]) n.z = nn["z"].as<float>();
 		s.note = n;
 	}
 

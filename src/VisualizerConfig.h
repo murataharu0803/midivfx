@@ -34,6 +34,7 @@ struct NoteStyle {
 	DecayStyle decay;
 	float gap = 0.0f; // history gap ratio [0, 1]
 	float radius = 0.0f; // corner radius ratio [0, 0.5] against min(scrollExtent, computedWidth)
+	float z = 0.0f; // z-depth of note mesh vertices
 };
 
 struct PedalStyle {
@@ -72,6 +73,7 @@ struct NoteStyleOverride {
 	DecayStyleOverride decay;
 	std::optional<float> gap;
 	std::optional<float> radius;
+	std::optional<float> z;
 };
 
 struct PedalStyleOverride {
