@@ -62,7 +62,7 @@ void ofApp::setup() {
 		audioPlayer.load(audioPath);
 	}
 
-	playbackStartTime = -config.playback.startPadding;
+	playbackStartTime = -(int64_t)ofGetElapsedTimeMicros() - config.playback.startPadding;
 }
 
 void ofApp::update() {

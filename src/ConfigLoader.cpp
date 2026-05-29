@@ -5,6 +5,7 @@
 #include "yaml-cpp/yaml.h"
 
 #include <cctype>
+#include <filesystem>
 #include <regex>
 #include <sstream>
 
@@ -171,6 +172,12 @@ VisualizerConfig ConfigLoader::load(const std::string & path) {
 		return cfg;
 	}
 
+	auto configDir = std::filesystem::absolute(path).parent_path();
+	auto resolvePath = [&](const std::string & p) -> std::string {
+		if (p.empty() || std::filesystem::path(p).is_absolute()) return p;
+		return (configDir / p).string();
+	};
+
 	try {
 		YAML::Node root = YAML::LoadFile(path);
 
@@ -178,8 +185,8 @@ VisualizerConfig ConfigLoader::load(const std::string & path) {
 		if (root["playback"]) {
 			const auto & pb = root["playback"];
 			if (pb["mode"]) cfg.playback.mode = parsePlaybackMode(pb["mode"].as<std::string>());
-			if (pb["midiFilePath"]) cfg.playback.midiFilePath = pb["midiFilePath"].as<std::string>();
-			if (pb["audioFilePath"]) cfg.playback.audioFilePath = pb["audioFilePath"].as<std::string>();
+			if (pb["midiFilePath"]) cfg.playback.midiFilePath = resolvePath(pb["midiFilePath"].as<std::string>());
+			if (pb["audioFilePath"]) cfg.playback.audioFilePath = resolvePath(pb["audioFilePath"].as<std::string>());
 			if (pb["midiInPort"]) cfg.playback.midiInPort = pb["midiInPort"].as<int>();
 			if (pb["startPadding"]) cfg.playback.startPadding = pb["startPadding"].as<int64_t>();
 			if (pb["endPadding"]) cfg.playback.endPadding = pb["endPadding"].as<int64_t>();
