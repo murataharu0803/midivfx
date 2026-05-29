@@ -48,6 +48,10 @@ public:
 
 	VideoExporter exporter;
 
+	// audio (preview mode)
+	ofSoundPlayer audioPlayer;
+	bool audioStarted = false;
+
 	// MIDI
 	ofxMidiIn midiIn;
 	MidiProcessor midiProcessor;
@@ -61,5 +65,5 @@ public:
 	vector<BeatEvent> beatEvents;
 	vector<string> trackNames;
 	size_t playbackHead = 0;
-	int64_t playbackStartTime = -config.playback.startPadding; // initial padding before the first event
+	int64_t playbackStartTime;
 };

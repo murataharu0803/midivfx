@@ -179,6 +179,7 @@ VisualizerConfig ConfigLoader::load(const std::string & path) {
 			const auto & pb = root["playback"];
 			if (pb["mode"]) cfg.playback.mode = parsePlaybackMode(pb["mode"].as<std::string>());
 			if (pb["midiFilePath"]) cfg.playback.midiFilePath = pb["midiFilePath"].as<std::string>();
+			if (pb["audioFilePath"]) cfg.playback.audioFilePath = pb["audioFilePath"].as<std::string>();
 			if (pb["midiInPort"]) cfg.playback.midiInPort = pb["midiInPort"].as<int>();
 			if (pb["startPadding"]) cfg.playback.startPadding = pb["startPadding"].as<int64_t>();
 			if (pb["endPadding"]) cfg.playback.endPadding = pb["endPadding"].as<int64_t>();
@@ -197,6 +198,7 @@ VisualizerConfig ConfigLoader::load(const std::string & path) {
 			const auto & t = root["timing"];
 			if (t["dispatchOffset"]) cfg.timing.dispatchOffset = t["dispatchOffset"].as<int64_t>();
 			if (t["removeOffset"]) cfg.timing.removeOffset = t["removeOffset"].as<int64_t>();
+			if (t["audioOffset"]) cfg.timing.audioOffset = t["audioOffset"].as<int64_t>();
 		}
 
 		// camera

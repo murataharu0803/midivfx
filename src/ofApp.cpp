@@ -54,6 +54,15 @@ void ofApp::setup() {
 	}
 	pianoKeys.setupPedalRouting(config, trackNames, midiProcessor);
 	exporter.setup(config, midiFileEvents);
+
+	if (config.playback.mode == PlaybackMode::Preview && !config.playback.audioFilePath.empty()) {
+		std::string audioPath = ofFilePath::isAbsolute(config.playback.audioFilePath)
+			? config.playback.audioFilePath
+			: ofFilePath::getCurrentExeDir() + config.playback.audioFilePath;
+		audioPlayer.load(audioPath);
+	}
+
+	playbackStartTime = -config.playback.startPadding;
 }
 
 void ofApp::update() {
@@ -61,6 +70,11 @@ void ofApp::update() {
 		currentTime = exporter.advanceAndGetElapsedUs() + playbackStartTime;
 	} else {
 		currentTime = ofGetElapsedTimeMicros() + playbackStartTime;
+	}
+
+	if (!audioStarted && audioPlayer.isLoaded() && currentTime >= config.timing.audioOffset) {
+		audioPlayer.play();
+		audioStarted = true;
 	}
 
 	if (config.playback.mode != PlaybackMode::Live) {

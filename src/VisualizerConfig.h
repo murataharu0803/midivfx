@@ -111,6 +111,7 @@ struct TrackConfig {
 struct PlaybackConfig {
 	PlaybackMode mode = PlaybackMode::Preview;
 	std::string midiFilePath = "song.mid";
+	std::string audioFilePath; // optional; empty = no audio
 	int midiInPort = 1;
 	int64_t startPadding = 3'000'000;
 	int64_t endPadding = 3'000'000;
@@ -125,6 +126,7 @@ struct ExportConfig {
 struct TimingConfig {
 	int64_t dispatchOffset = 5'000'000;
 	int64_t removeOffset = 5'000'000;
+	int64_t audioOffset = 0; // audio delay relative to visual (us); positive = audio starts later
 };
 
 struct CameraConfig {
