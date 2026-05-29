@@ -1,0 +1,180 @@
+# ── Playback source ───────────────────────────────────────────────────────────
+playback:
+  mode: preview # preview | live | export
+  midiFilePath: nine_point_eight-orchestra-v2.4.mid # path to MIDI file (used when mode is preview or export)
+  audioFilePath: nine_point_eight-orchestra-v2.4.mp3 # path to audio file (optional, used for preview or export)
+  midiInPort: 1 # live MIDI input port index (used when mode is live)
+  startPadding: 3000000 # extra time before first note (us)
+  endPadding: 3000000 # extra time after last note (us)
+
+# ── Export ────────────────────────────────────────────────────────────────────
+export:
+  path: output.mp4
+  fps: 60
+  limit: 10000000 # maximum duration of exported video (us), optional
+
+# ── Timing ────────────────────────────────────────────────────────────────────
+timing:
+  dispatchOffset: 5000000 # how early before onTime to dispatch events (us)
+  removeOffset: 5000000 # how long after pedalOffTime to keep history (us)
+  audioOffset: 0 # audio delay relative to visual (us); positive = audio starts later
+
+# ── Camera ────────────────────────────────────────────────────────────────────
+camera:
+  pitchAxis: 0.0
+  timeAxis: 500.0
+  zAxis: 3200.0
+  targetPitchAxis: 0.0
+  targetTimeAxis: 500.0
+
+# ── Display ───────────────────────────────────────────────────────────────────
+display:
+  width: 1920
+  height: 1080
+  showPiano: false
+  averageWidth: true
+  reverse: true # only avaiable when mode is preview or export
+  horizontal: true
+  speed: 0.001 # pixels per microsecond
+  beat: false
+
+# ── Global Style ──────────────────────────────────────────────────────────────
+style:
+  note:
+    mode: fill # fill | decay | CC# (e.g. CC9)
+    velocity: true
+    color: '#ffffff'
+    gap: 0.1
+    radius: 0.33
+    z: 0.0
+  pedal:
+    show: true
+    color: '#444444'
+
+# ── Style Per Channel ─────────────────────────────────────────────────────────
+tracks:
+- regex: piccolo
+  style:
+    note:
+      z: 0
+      color: '#ff4444'
+- regex: flute
+  style:
+    note:
+      z: 0
+      color: '#ff0000'
+- regex: oboe
+  style:
+    note:
+      z: 0
+      color: '#ff6600'
+- regex: clarinet
+  style:
+    note:
+      z: 0
+      color: '#ffcc00'
+- regex: bassoon
+  style:
+    note:
+      z: 0
+      color: '#660000'
+- regex: horn
+  style:
+    note:
+      z: 20
+      color: '#00ff88'
+- regex: trumpet
+  style:
+    note:
+      z: 20
+      color: '#00ffff'
+- regex: trombone
+  style:
+    note:
+      z: 20
+      color: '#00aaff'
+- regex: tuba
+  style:
+    note:
+      z: 20
+      color: '#0044aa'
+- regex: violin
+  style:
+    note:
+      z: 40
+      color: '#aa00ff'
+- regex: viola
+  style:
+    note:
+      z: 40
+      color: '#8800aa'
+- regex: cello
+  style:
+    note:
+      z: 40
+      color: '#440088'
+- regex: contrabass
+  style:
+    note:
+      z: 40
+      color: '#220044'
+- regex: glockenspiel
+  style:
+    note:
+      mode: decay
+      z: 60
+      color: '#ffffff'
+      decay:
+        rate: 0.6
+- regex: chimes
+  style:
+    note:
+      mode: decay
+      z: 60
+      color: '#aaaaaa'
+      decay:
+        rate: 0.8
+- regex: cymbal
+  style:
+    note:
+      mode: decay
+      z: 60
+      color: '#ffff00'
+      decay:
+        rate: 0.75
+    remaps:
+    - mapStartPitch: 124
+      mapEndPitch: 127
+      color: '#ffff00'
+- regex: bass drum
+  style:
+    note:
+      mode: decay
+      color: '#444444'
+      z: 60
+      decay:
+        rate: 0.25
+    remaps:
+    - mapStartPitch: 0
+      mapEndPitch: 5
+      color: '#444444'
+- regex: snare drum
+  style:
+    note:
+      mode: decay
+      color: '#888888'
+      z: 60
+      decay:
+        rate: 0.1
+    remaps:
+    - mapStartPitch: 6
+      mapEndPitch: 12
+      color: '#888888'
+- regex: timpani
+  style:
+    note:
+      mode: decay
+      color: '#884400'
+      z: 60
+      decay:
+        rate: 0.75

@@ -1,0 +1,74 @@
+# ── Playback source ───────────────────────────────────────────────────────────
+playback:
+  mode: preview # preview | live | export
+  midiFilePath: riding_on_dreams.mid # path to MIDI file (used when mode is preview or export)
+  audioFilePath: riding_on_dreams.mp3 # path to audio file (optional, used for preview or export)
+  midiInPort: 1 # live MIDI input port index (used when mode is live)
+  startPadding: 5000000 # extra time before first note (us)
+  endPadding: 5000000 # extra time after last note (us)
+
+# ── Export ────────────────────────────────────────────────────────────────────
+export:
+  path: output.mp4
+  fps: 60
+  limit: 5000000 # maximum duration of exported video (us), 0 = no limit
+
+# ── Timing ────────────────────────────────────────────────────────────────────
+timing:
+  dispatchOffset: 5000000 # how early before onTime to dispatch events (us)
+  removeOffset: 5000000 # how long after pedalOffTime to keep history (us)
+  audioOffset: -383000 # audio delay relative to visual (us); positive = audio starts later
+
+# ── Camera ────────────────────────────────────────────────────────────────────
+camera:
+  pitchAxis: 0.0
+  timeAxis: 500.0
+  zAxis: 3200.0
+  targetPitchAxis: 0.0
+  targetTimeAxis: 500.0
+
+# ── Display ───────────────────────────────────────────────────────────────────
+display:
+  width: 1920
+  height: 1080
+  showPiano: false
+  averageWidth: true
+  reverse: true # only avaiable when mode is preview or export
+  horizontal: true
+  speed: 0.001 # pixels per microsecond
+  beat: false
+
+# ── Global Style ──────────────────────────────────────────────────────────────
+style:
+  note:
+    mode: decay # fill | decay | CC# (e.g. CC9)
+    velocity: true
+    color: '#ff8800'
+    gap: 0.2
+    radius: 0.33
+    decay:
+      rate: 0.9 # alpha multiplier per decayTimeSegment
+      timeSegment: 100000 # segment length for decay steps (us)
+  pedal:
+    show: true
+    color: '#444444'
+  remaps: # used for percussive instruments. Usually specified per-track or per-channel.
+#   - pitch: 36
+#     suppressed: false
+#     mapStartPitch: 24
+#     mapEndPitch: 36
+#     color: '#888888'
+
+# ── Style Per Channel ─────────────────────────────────────────────────────────
+tracks:
+- track: 1 # 1 based, ranges using comma and dashes, e.g. "1,3-5", required when regex is not specified
+  regex: '.*' # case insensitive
+  style:
+    pedal:
+      track: 2 # use pedal data from track (1-based), defaults to original track
+      channel: 1 # use pedal data from channel in specified track (1-based), defaults to original channel
+  channels:
+  - channel: 1 # 1 based, ranges using comma and dashes, e.g. "1,3-5"
+    style: # channel specific style, inherits from track style (remaps are combined)
+
+debug: false # show debug info such as history IDs
